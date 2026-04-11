@@ -1,0 +1,12 @@
+[2026-04-11T00:49:59.465Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3000
+Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:285:16)
+[2026-04-11T01:22:36.112Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3000
+Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:269:16)
