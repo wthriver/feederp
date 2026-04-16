@@ -57,10 +57,6 @@ async function initPostgres() {
     const result = await pgPool.query('SELECT NOW() as now, version() as version');
     console.log('✅ Connected to PostgreSQL:', result.rows[0].version.split(' ')[0]);
 }
-    });
-
-    await pgPool.query('SELECT NOW()');
-}
 
 async function createTables() {
     let sql = `
