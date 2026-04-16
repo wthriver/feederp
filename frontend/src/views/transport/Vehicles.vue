@@ -34,42 +34,36 @@
             </table>
         </div>
 
-        <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
-            <div class="modal" style="max-width: 500px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">{{ editing ? 'Edit' : 'Add' }} Vehicle</h3>
-                    <button class="modal-close" @click="showModal = false">&times;</button>
+        <AppModal v-model="showModal" :title="editing ? 'Edit Vehicle' : 'Add Vehicle'" size="sm" :loading="saving">
+            <div class="form-row-4">
+                <div class="form-group span-2">
+                    <label class="form-label">Vehicle Number *</label>
+                    <input v-model="form.vehicle_number" class="input-field" required />
                 </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label class="form-label">Vehicle Number *</label>
-                        <input v-model="form.vehicle_number" class="input-field" required />
-                    </div>
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Type</label>
-                            <input v-model="form.type" class="input-field" placeholder="Truck, Tempo, Van" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Capacity (tons)</label>
-                            <input v-model.number="form.capacity" type="number" class="input-field" />
-                        </div>
-                    </div>
+                <div class="form-group">
+                    <label class="form-label">Type</label>
+                    <input v-model="form.type" class="input-field" />
                 </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="showModal = false">{{ $t('common.cancel') }}</button>
-                    <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+                <div class="form-group">
+                    <label class="form-label">Capacity (tons)</label>
+                    <input v-model.number="form.capacity" type="number" class="input-field" />
                 </div>
             </div>
-        </div>
+            <template #footer>
+                <button class="btn" @click="showModal = false">Cancel</button>
+                <button class="btn btn-primary" @click="save">Save</button>
+            </template>
+        </AppModal>
     </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import api from '@/api'
+import AppModal from '@/components/AppModal.vue'
 
 const loading = ref(false)
+const saving = ref(false)
 const data = ref([])
 const showModal = ref(false)
 const editing = ref(null)
@@ -98,12 +92,15 @@ function editItem(item) {
 }
 
 async function save() {
+    saving.value = true
     try {
-        await api.post('/transport/vehicles', form)
+        if (editing.value) await api.put(`/transport/vehicles/${editing.value.id}`, form)
+        else await api.post('/transport/vehicles', form)
         window.showToast?.({ type: 'success', message: 'Saved successfully' })
         showModal.value = false
         loadData()
     } catch (error) { window.showToast?.({ type: 'error', message: 'Save failed' }) }
+    finally { saving.value = false }
 }
 
 onMounted(loadData)

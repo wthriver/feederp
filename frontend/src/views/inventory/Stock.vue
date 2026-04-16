@@ -3,8 +3,8 @@
         <div class="page-header">
             <h1>{{ $t('nav.stock') }}</h1>
             <div class="flex gap-2">
-                <button class="btn" @click="showTransferModal = true">+ Transfer</button>
-                <button class="btn btn-primary" @click="showAdjustModal = true">+ Adjustment</button>
+                <router-link to="/dashboard/stock-transfers" class="btn">+ Transfer</router-link>
+                <router-link to="/dashboard/stock-adjustments" class="btn btn-primary">+ Adjustment</router-link>
             </div>
         </div>
 
@@ -44,8 +44,8 @@
                         <td><span class="badge badge-secondary">{{ item.item_type === 'raw_material' ? 'Raw Material' : 'Product' }}</span></td>
                         <td>{{ item.godown_name }}</td>
                         <td class="font-mono text-right">{{ formatNumber(item.total_qty) }}</td>
-                        <td class="font-mono text-right">₹{{ formatNumber(item.avg_rate) }}</td>
-                        <td class="font-mono text-right">₹{{ formatNumber(item.total_qty * item.avg_rate) }}</td>
+                        <td class="font-mono text-right">৳{{ formatNumber(item.avg_rate) }}</td>
+                        <td class="font-mono text-right">৳{{ formatNumber(item.total_qty * item.avg_rate) }}</td>
                     </tr>
                     <tr v-if="data.length === 0">
                         <td colspan="7" class="text-center text-muted">No stock data available</td>
@@ -56,7 +56,7 @@
                         <td colspan="4" class="text-right">Total:</td>
                         <td class="font-mono text-right">{{ formatNumber(totals.qty) }}</td>
                         <td></td>
-                        <td class="font-mono text-right">₹{{ formatNumber(totals.value) }}</td>
+                        <td class="font-mono text-right">৳{{ formatNumber(totals.value) }}</td>
                     </tr>
                 </tfoot>
             </table>

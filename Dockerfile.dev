@@ -1,0 +1,17 @@
+# Development Dockerfile for FeedMill ERP
+FROM node:20-alpine AS development
+
+WORKDIR /app
+
+# Install dependencies
+COPY package*.json ./
+RUN npm ci
+
+# Copy source files
+COPY . .
+
+# Expose ports
+EXPOSE 3006 5173
+
+# Start in development mode with hot reload
+CMD ["npm", "run", "dev"]

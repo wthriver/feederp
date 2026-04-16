@@ -23,60 +23,54 @@
             </div>
         </div>
 
-        <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
-            <div class="modal" style="max-width: 500px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">Add IoT Device</h3>
-                    <button class="modal-close" @click="showModal = false">&times;</button>
+        <AppModal v-model="showModal" title="Add IoT Device" size="md" :loading="saving">
+            <div class="form-group">
+                <label class="form-label">Device Code *</label>
+                <input v-model="form.device_code" class="input-field" required />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Name *</label>
+                <input v-model="form.name" class="input-field" required />
+            </div>
+            <div class="form-row form-row-2">
+                <div class="form-group">
+                    <label class="form-label">Type</label>
+                    <select v-model="form.type" class="select-field">
+                        <option value="sensor">Sensor</option>
+                        <option value="counter">Counter</option>
+                        <option value="scale">Scale</option>
+                    </select>
                 </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label class="form-label">Device Code *</label>
-                        <input v-model="form.device_code" class="input-field" required />
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Name *</label>
-                        <input v-model="form.name" class="input-field" required />
-                    </div>
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Type</label>
-                            <select v-model="form.type" class="select-field">
-                                <option value="sensor">Sensor</option>
-                                <option value="counter">Counter</option>
-                                <option value="scale">Scale</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Protocol</label>
-                            <select v-model="form.protocol" class="select-field">
-                                <option value="http">HTTP</option>
-                                <option value="mqtt">MQTT</option>
-                                <option value="modbus">Modbus</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Endpoint URL</label>
-                        <input v-model="form.endpoint" class="input-field" placeholder="http://..." />
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="showModal = false">{{ $t('common.cancel') }}</button>
-                    <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+                <div class="form-group">
+                    <label class="form-label">Protocol</label>
+                    <select v-model="form.protocol" class="select-field">
+                        <option value="http">HTTP</option>
+                        <option value="mqtt">MQTT</option>
+                        <option value="modbus">Modbus</option>
+                    </select>
                 </div>
             </div>
-        </div>
+            <div class="form-group">
+                <label class="form-label">Endpoint URL</label>
+                <input v-model="form.endpoint" class="input-field" placeholder="http://..." />
+            </div>
+            <template #footer>
+                <button class="btn" @click="showModal = false">{{ $t('common.cancel') }}</button>
+                <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+            </template>
+        </AppModal>
     </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import api from '@/api'
+import AppModal from '@/components/AppModal.vue'
 
 const loading = ref(false)
 const devices = ref([])
 const showModal = ref(false)
+const saving = ref(false)
 
 const form = reactive({ device_code: '', name: '', type: 'sensor', protocol: 'http', endpoint: '', machine_id: '' })
 
@@ -94,12 +88,14 @@ function openModal() { showModal.value = true }
 function viewReadings(device) { console.log('Readings', device) }
 
 async function save() {
+    saving.value = true
     try {
         await api.post('/iot/devices', form)
         window.showToast?.({ type: 'success', message: 'Device added' })
         showModal.value = false
         loadData()
     } catch (error) { window.showToast?.({ type: 'error', message: 'Save failed' }) }
+    finally { saving.value = false }
 }
 
 onMounted(loadData)

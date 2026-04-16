@@ -1,0 +1,10 @@
+ENV PORT: 3006
+Table error: incomplete input
+Table error: no such column: type
+Created 88 tables
+✓ Database initialized
+  Migrations: 0 applied, 3 skipped
+[33mwarn[39m: REDIS_URL not configured, using in-memory cache only {"service":"feedmill-erp","timestamp":"2026-04-16 13:55:07"}
+✓ Cache initialized
+Starting server on PORT: 3006
+❌ Uncaught Exception: listen EADDRINUSE: address already in use :::3006

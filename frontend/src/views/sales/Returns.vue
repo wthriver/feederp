@@ -40,7 +40,7 @@
                         <td class="font-mono">{{ item.invoice_number }}</td>
                         <td>{{ item.customer_name }}</td>
                         <td class="text-center">{{ item.item_count }}</td>
-                        <td class="font-mono">₹{{ item.total_amount?.toLocaleString() }}</td>
+                        <td class="font-mono">৳{{ item.total_amount?.toLocaleString() }}</td>
                         <td>{{ item.reason || '-' }}</td>
                         <td><span :class="['badge', statusClass(item.status)]">{{ item.status }}</span></td>
                         <td>
@@ -65,104 +65,98 @@
             </div>
         </div>
 
-        <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
-            <div class="modal" style="max-width: 800px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">Sales Return</h3>
-                    <button class="modal-close" @click="closeModal">&times;</button>
+        <AppModal v-model="showModal" title="Sales Return" size="lg" :loading="saving" @close="closeModal">
+            <div class="form-row-4">
+                <div class="form-group span-2">
+                    <label class="form-label">Invoice *</label>
+                    <select v-model="form.invoice_id" class="select-field" required @change="onInvoiceChange">
+                        <option value="">Select Invoice</option>
+                        <option v-for="inv in invoices" :key="inv.id" :value="inv.id">{{ inv.invoice_number }}</option>
+                    </select>
                 </div>
-                <div class="modal-body">
-                    <div class="form-row form-row-3">
-                        <div class="form-group">
-                            <label class="form-label">Invoice *</label>
-                            <select v-model="form.invoice_id" class="select-field" required @change="onInvoiceChange">
-                                <option value="">Select Invoice</option>
-                                <option v-for="inv in invoices" :key="inv.id" :value="inv.id">{{ inv.invoice_number }} - {{ inv.customer_name }}</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Return Date *</label>
-                            <input v-model="form.return_date" type="date" class="input-field" required />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Customer</label>
-                            <input v-model="form.customer_name" type="text" class="input-field" readonly />
-                        </div>
-                    </div>
-
-                    <div class="items-section">
-                        <div class="section-header">
-                            <h4>Return Items</h4>
-                            <button type="button" class="btn btn-sm" @click="addItem" :disabled="!form.invoice_id">+ Add Item</button>
-                        </div>
-                        <table class="sheet-grid">
-                            <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th>Invoice Qty</th>
-                                    <th>Return Qty</th>
-                                    <th>Rate</th>
-                                    <th>Amount</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="(item, idx) in form.items" :key="idx">
-                                    <td>
-                                        <select v-model="item.product_id" class="select-field" @change="selectProduct(item)">
-                                            <option value="">Select</option>
-                                            <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }}</option>
-                                        </select>
-                                    </td>
-                                    <td class="font-mono text-right">{{ item.invoice_qty || '-' }}</td>
-                                    <td><input v-model.number="item.quantity" type="number" class="input-field" @input="calcAmount(item)" /></td>
-                                    <td><input v-model.number="item.rate" type="number" class="input-field" step="0.01" @input="calcAmount(item)" /></td>
-                                    <td class="font-mono">₹{{ ((item.quantity || 0) * (item.rate || 0)).toLocaleString() }}</td>
-                                    <td><button type="button" class="btn btn-sm btn-icon" @click="removeItem(idx)">🗑️</button></td>
-                                </tr>
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <td colspan="4" class="text-right"><strong>Total:</strong></td>
-                                    <td class="font-mono"><strong>₹{{ totalAmount.toLocaleString() }}</strong></td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Reason *</label>
-                            <select v-model="form.reason" class="select-field" required>
-                                <option value="">Select Reason</option>
-                                <option value="damaged">Damaged</option>
-                                <option value="wrong_item">Wrong Item</option>
-                                <option value="quality_issue">Quality Issue</option>
-                                <option value="expired">Expired</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Notes</label>
-                            <textarea v-model="form.notes" class="input-field" rows="2"></textarea>
-                        </div>
-                    </div>
+                <div class="form-group">
+                    <label class="form-label">Return Date *</label>
+                    <input v-model="form.return_date" type="date" class="input-field" required />
                 </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="closeModal">{{ $t('common.cancel') }}</button>
-                    <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+                <div class="form-group span-2">
+                    <label class="form-label">Customer</label>
+                    <input v-model="form.customer_name" type="text" class="input-field" readonly />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Reason *</label>
+                    <select v-model="form.reason" class="select-field" required>
+                        <option value="">Select</option>
+                        <option value="damaged">Damaged</option>
+                        <option value="wrong_item">Wrong Item</option>
+                        <option value="quality_issue">Quality Issue</option>
+                        <option value="expired">Expired</option>
+                        <option value="other">Other</option>
+                    </select>
                 </div>
             </div>
-        </div>
+
+            <div class="items-section">
+                <div class="section-header">
+                    <h4>Return Items</h4>
+                    <button type="button" class="btn btn-sm" @click="addItem" :disabled="!form.invoice_id">+ Add</button>
+                </div>
+                <table class="sheet-grid">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th style="width: 80px;">Inv Qty</th>
+                            <th style="width: 100px;">Return Qty</th>
+                            <th style="width: 100px;">Rate</th>
+                            <th style="width: 120px;">Amount</th>
+                            <th style="width: 40px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item, idx) in form.items" :key="idx">
+                            <td>
+                                <select v-model="item.product_id" class="table-select" @change="selectProduct(item)">
+                                    <option value="">Select</option>
+                                    <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }}</option>
+                                </select>
+                            </td>
+                            <td class="font-mono text-right">{{ item.invoice_qty || '-' }}</td>
+                            <td><input v-model.number="item.quantity" type="number" class="table-input text-right" @input="calcAmount(item)" /></td>
+                            <td><input v-model.number="item.rate" type="number" class="table-input text-right" step="0.01" @input="calcAmount(item)" /></td>
+                            <td class="font-mono text-right">৳{{ ((item.quantity || 0) * (item.rate || 0)).toLocaleString() }}</td>
+                            <td><button type="button" class="btn btn-sm btn-icon" @click="removeItem(idx)">🗑️</button></td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" class="text-right"><strong>Total:</strong></td>
+                            <td class="font-mono text-right"><strong>৳{{ totalAmount.toLocaleString() }}</strong></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="form-row-4" style="margin-top: 8px;">
+                <div class="form-group span-4">
+                    <label class="form-label">Notes</label>
+                    <textarea v-model="form.notes" class="input-field" rows="2"></textarea>
+                </div>
+            </div>
+            <template #footer>
+                <button class="btn" @click="closeModal">{{ $t('common.cancel') }}</button>
+                <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+            </template>
+        </AppModal>
     </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import api from '@/api'
+import AppModal from '@/components/AppModal.vue'
 
 const loading = ref(false)
+const saving = ref(false)
 const data = ref([])
 const invoices = ref([])
 const products = ref([])
@@ -259,12 +253,17 @@ async function save() {
         window.showToast?.({ type: 'error', message: 'Please fill required fields' })
         return
     }
+    saving.value = true
     try {
         await api.post('/sales/returns', form)
         window.showToast?.({ type: 'success', message: 'Return saved' })
         closeModal()
         loadData()
-    } catch (error) { window.showToast?.({ type: 'error', message: 'Save failed' }) }
+    } catch (error) { 
+        window.showToast?.({ type: 'error', message: 'Save failed' }) 
+    } finally {
+        saving.value = false
+    }
 }
 
 function closeModal() { showModal.value = false }
@@ -273,10 +272,8 @@ onMounted(() => { loadData(); loadInvoices(); loadProducts() })
 </script>
 
 <style scoped>
-.items-section { margin-top: 16px; }
-.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.section-header h4 { font-size: var(--font-size-base); font-weight: 600; }
-.items-section table { margin-top: 8px; }
-.items-section table th, .items-section table td { padding: 6px; }
-.items-section table .input-field, .items-section table .select-field { width: 100%; padding: 4px 8px; font-size: var(--font-size-sm); }
+.items-section { margin-top: 12px; }
+.section-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+.section-header h4 { font-size: var(--font-size-base); font-weight: 600; margin: 0; }
+.text-right { text-align: right; }
 </style>

@@ -36,67 +36,55 @@
             </table>
         </div>
 
-        <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
-            <div class="modal" style="max-width: 500px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">{{ editing ? 'Edit' : 'Add' }} QC Parameter</h3>
-                    <button class="modal-close" @click="showModal = false">&times;</button>
+        <AppModal v-model="showModal" :title="editing ? 'Edit QC Parameter' : 'Add QC Parameter'" size="md" :loading="saving">
+            <div class="form-row-4">
+                <div class="form-group">
+                    <label class="form-label">{{ $t('common.code') }} *</label>
+                    <input v-model="form.code" class="input-field" required />
                 </div>
-                <div class="modal-body">
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">{{ $t('common.code') }} *</label>
-                            <input v-model="form.code" class="input-field" required />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">{{ $t('common.name') }} *</label>
-                            <input v-model="form.name" class="input-field" required />
-                        </div>
-                    </div>
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Type</label>
-                            <select v-model="form.type" class="select-field">
-                                <option value="raw_material">Raw Material</option>
-                                <option value="finished_product">Finished Product</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Unit</label>
-                            <input v-model="form.unit" class="input-field" />
-                        </div>
-                    </div>
-                    <div class="form-row form-row-3">
-                        <div class="form-group">
-                            <label class="form-label">Min Value</label>
-                            <input v-model.number="form.min_value" type="number" step="0.01" class="input-field" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Max Value</label>
-                            <input v-model.number="form.max_value" type="number" step="0.01" class="input-field" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Target Value</label>
-                            <input v-model.number="form.target_value" type="number" step="0.01" class="input-field" />
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="showModal = false">{{ $t('common.cancel') }}</button>
-                    <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+                <div class="form-group span-3">
+                    <label class="form-label">{{ $t('common.name') }} *</label>
+                    <input v-model="form.name" class="input-field" required />
                 </div>
             </div>
-        </div>
+            <div class="form-row-4" style="margin-top: 6px;">
+                <div class="form-group">
+                    <label class="form-label">Type</label>
+                    <select v-model="form.type" class="select-field">
+                        <option value="raw_material">Raw Material</option>
+                        <option value="finished_product">Finished Product</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Unit</label>
+                    <input v-model="form.unit" class="input-field" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Min</label>
+                    <input v-model.number="form.min_value" type="number" step="0.01" class="input-field" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Max</label>
+                    <input v-model.number="form.max_value" type="number" step="0.01" class="input-field" />
+                </div>
+            </div>
+            <template #footer>
+                <button class="btn" @click="showModal = false">{{ $t('common.cancel') }}</button>
+                <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+            </template>
+        </AppModal>
     </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import api from '@/api'
+import AppModal from '@/components/AppModal.vue'
 
 const loading = ref(false)
 const data = ref([])
 const showModal = ref(false)
+const saving = ref(false)
 const editing = ref(null)
 
 const form = reactive({ code: '', name: '', type: 'finished_product', min_value: 0, max_value: 100, target_value: 0, unit: '%' })
@@ -123,12 +111,14 @@ function editItem(item) {
 }
 
 async function save() {
+    saving.value = true
     try {
         await api.post('/quality/parameters', form)
         window.showToast?.({ type: 'success', message: 'Saved successfully' })
         showModal.value = false
         loadData()
     } catch (error) { window.showToast?.({ type: 'error', message: 'Save failed' }) }
+    finally { saving.value = false }
 }
 
 onMounted(loadData)

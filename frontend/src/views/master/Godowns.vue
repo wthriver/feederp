@@ -35,53 +35,47 @@
             </table>
         </div>
 
-        <div v-if="showModal" class="modal-overlay" @click.self="showModal = false" role="dialog" aria-modal="true" aria-labelledby="godown-modal-title">
-            <div class="modal" style="max-width: 500px;">
-                <div class="modal-header">
-                    <h3 id="godown-modal-title" class="modal-title">{{ editing ? 'Edit' : 'Add' }} Godown</h3>
-                    <button class="modal-close" @click="showModal = false" aria-label="Close modal">&times;</button>
+        <AppModal v-model="showModal" :title="editing ? 'Edit Godown' : 'Add Godown'" size="md" :loading="saving">
+            <div class="form-row form-row-2">
+                <div class="form-group">
+                    <label class="form-label">{{ $t('common.code') }} *</label>
+                    <input v-model="form.code" class="input-field" required />
                 </div>
-                <div class="modal-body">
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">{{ $t('common.code') }} *</label>
-                            <input v-model="form.code" class="input-field" required />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">{{ $t('common.name') }} *</label>
-                            <input v-model="form.name" class="input-field" required />
-                        </div>
-                    </div>
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Type *</label>
-                            <select v-model="form.type" class="select-field" required>
-                                <option value="raw_material">Raw Material</option>
-                                <option value="finished_goods">Finished Goods</option>
-                                <option value="semi_finished">Semi Finished</option>
-                                <option value="general">General</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Location</label>
-                            <input v-model="form.location" class="input-field" />
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="showModal = false" aria-label="Cancel">{{ $t('common.cancel') }}</button>
-                    <button class="btn btn-primary" @click="save" aria-label="Save godown">{{ $t('common.save') }}</button>
+                <div class="form-group">
+                    <label class="form-label">{{ $t('common.name') }} *</label>
+                    <input v-model="form.name" class="input-field" required />
                 </div>
             </div>
-        </div>
+            <div class="form-row form-row-2">
+                <div class="form-group">
+                    <label class="form-label">Type *</label>
+                    <select v-model="form.type" class="select-field" required>
+                        <option value="raw_material">Raw Material</option>
+                        <option value="finished_goods">Finished Goods</option>
+                        <option value="semi_finished">Semi Finished</option>
+                        <option value="general">General</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Location</label>
+                    <input v-model="form.location" class="input-field" />
+                </div>
+            </div>
+            <template #footer>
+                <button class="btn" @click="showModal = false">{{ $t('common.cancel') }}</button>
+                <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+            </template>
+        </AppModal>
     </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import api from '@/api'
+import AppModal from '@/components/AppModal.vue'
 
 const loading = ref(false)
+const saving = ref(false)
 const data = ref([])
 const showModal = ref(false)
 const editing = ref(null)

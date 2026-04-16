@@ -2,8 +2,16 @@ const express = require('express');
 const router = express.Router();
 const { query, queryOne } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
+const cache = require('../utils/cache');
 
 router.get('/summary', authenticate, async (req, res) => {
+    const cacheKey = cache.getCacheKey('dashboard', `${req.tenantId}:${req.factoryId}`);
+    
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+        return res.json(cached);
+    }
+
     try {
         const today = new Date().toISOString().slice(0, 10);
 
@@ -93,7 +101,7 @@ router.get('/summary', authenticate, async (req, res) => {
             ORDER BY al.created_at DESC LIMIT 10
         `, [req.tenantId]);
 
-        res.json({
+        const response = {
             success: true,
             data: {
                 today: {
@@ -119,7 +127,10 @@ router.get('/summary', authenticate, async (req, res) => {
                 },
                 recent_activity: recentActivity
             }
-        });
+        };
+        
+        res.json(response);
+        await cache.set(cacheKey, response, 60);
     } catch (error) {
         console.error('Dashboard summary error:', error);
         res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });

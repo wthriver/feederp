@@ -60,67 +60,60 @@
             <div class="pagination-info">Total: {{ meta.total }}</div>
         </div>
 
-        <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
-            <div class="modal" style="max-width: 600px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">{{ editing ? 'Edit' : 'New' }} Delivery Order</h3>
-                    <button class="modal-close" @click="closeModal">&times;</button>
+        <AppModal v-model="showModal" :title="editing ? 'Edit Delivery' : 'New Delivery'" size="md" :loading="saving">
+            <div class="form-row-4">
+                <div class="form-group span-2">
+                    <label class="form-label">Invoice *</label>
+                    <select v-model="form.invoice_id" class="select-field" required>
+                        <option value="">Select Invoice</option>
+                        <option v-for="inv in invoices" :key="inv.id" :value="inv.id">{{ inv.invoice_number }}</option>
+                    </select>
                 </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label class="form-label">Invoice *</label>
-                        <select v-model="form.invoice_id" class="select-field" required>
-                            <option value="">Select Invoice</option>
-                            <option v-for="inv in invoices" :key="inv.id" :value="inv.id">{{ inv.invoice_number }} - {{ inv.customer_name }}</option>
-                        </select>
-                    </div>
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Scheduled Date *</label>
-                            <input v-model="form.scheduled_date" type="date" class="input-field" required />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Vehicle</label>
-                            <select v-model="form.vehicle_id" class="select-field">
-                                <option value="">Select Vehicle</option>
-                                <option v-for="v in vehicles" :key="v.id" :value="v.id">{{ v.vehicle_number }} ({{ v.type }})</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Driver</label>
-                            <select v-model="form.driver_id" class="select-field">
-                                <option value="">Select Driver</option>
-                                <option v-for="d in drivers" :key="d.id" :value="d.id">{{ d.name }} - {{ d.phone }}</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Contact Number</label>
-                            <input v-model="form.contact_number" class="input-field" placeholder="Customer contact" />
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Delivery Address</label>
-                        <textarea v-model="form.delivery_address" class="input-field" rows="2"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Notes</label>
-                        <textarea v-model="form.notes" class="input-field" rows="2"></textarea>
-                    </div>
+                <div class="form-group">
+                    <label class="form-label">Scheduled Date *</label>
+                    <input v-model="form.scheduled_date" type="date" class="input-field" required />
                 </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="closeModal">{{ $t('common.cancel') }}</button>
-                    <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+                <div class="form-group">
+                    <label class="form-label">Contact</label>
+                    <input v-model="form.contact_number" class="input-field" />
                 </div>
             </div>
-        </div>
+            <div class="form-row-4" style="margin-top: 6px;">
+                <div class="form-group">
+                    <label class="form-label">Vehicle</label>
+                    <select v-model="form.vehicle_id" class="select-field">
+                        <option value="">Select</option>
+                        <option v-for="v in vehicles" :key="v.id" :value="v.id">{{ v.vehicle_number }}</option>
+                    </select>
+                </div>
+                <div class="form-group span-3">
+                    <label class="form-label">Driver</label>
+                    <select v-model="form.driver_id" class="select-field">
+                        <option value="">Select</option>
+                        <option v-for="d in drivers" :key="d.id" :value="d.id">{{ d.name }} ({{ d.phone }})</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group" style="margin-top: 6px;">
+                <label class="form-label">Delivery Address</label>
+                <textarea v-model="form.delivery_address" class="input-field" rows="2"></textarea>
+            </div>
+            <div class="form-group" style="margin-top: 6px;">
+                <label class="form-label">Notes</label>
+                <textarea v-model="form.notes" class="input-field" rows="2"></textarea>
+            </div>
+            <template #footer>
+                <button class="btn" @click="closeModal">{{ $t('common.cancel') }}</button>
+                <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+            </template>
+        </AppModal>
     </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import api from '@/api'
+import AppModal from '@/components/AppModal.vue'
 
 const loading = ref(false)
 const data = ref([])
@@ -129,6 +122,7 @@ const vehicles = ref([])
 const drivers = ref([])
 const showModal = ref(false)
 const editing = ref(null)
+const saving = ref(false)
 const filter = reactive({ search: '', status: '' })
 const meta = reactive({ total: 0 })
 
@@ -219,6 +213,7 @@ async function save() {
         window.showToast?.({ type: 'error', message: 'Please fill required fields' })
         return
     }
+    saving.value = true
     try {
         if (editing.value) {
             await api.put(`/transport/delivery-orders/${editing.value.id}`, form)
@@ -229,6 +224,7 @@ async function save() {
         closeModal()
         loadData()
     } catch (error) { window.showToast?.({ type: 'error', message: 'Save failed' }) }
+    finally { saving.value = false }
 }
 
 function closeModal() {

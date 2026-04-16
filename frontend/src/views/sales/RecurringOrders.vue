@@ -42,59 +42,54 @@
             </table>
         </div>
 
-        <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
-            <div class="modal" style="max-width: 600px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">Create Recurring Order</h3>
-                    <button class="modal-close" @click="showModal = false">&times;</button>
+        <AppModal v-model="showModal" title="Create Recurring Order" size="md" :loading="saving">
+            <div class="form-row-4">
+                <div class="form-group span-2">
+                    <label class="form-label">Customer *</label>
+                    <select v-model="form.customer_id" class="select-field">
+                        <option value="">Select</option>
+                        <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }}</option>
+                    </select>
                 </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label class="form-label">Customer *</label>
-                        <select v-model="form.customer_id" class="select-field">
-                            <option value="">Select Customer</option>
-                            <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }}</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Product *</label>
-                        <select v-model="form.product_id" class="select-field">
-                            <option value="">Select Product</option>
-                            <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }}</option>
-                        </select>
-                    </div>
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Quantity *</label>
-                            <input v-model="form.quantity" type="number" class="input-field" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Frequency *</label>
-                            <select v-model="form.frequency" class="select-field">
-                                <option value="daily">Daily</option>
-                                <option value="weekly">Weekly</option>
-                                <option value="monthly">Monthly</option>
-                                <option value="quarterly">Quarterly</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Start Date *</label>
-                        <input v-model="form.start_date" type="date" class="input-field" />
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="showModal = false">Cancel</button>
-                    <button class="btn btn-primary" @click="save" :disabled="saving">{{ saving ? 'Creating...' : 'Create' }}</button>
+                <div class="form-group span-2">
+                    <label class="form-label">Product *</label>
+                    <select v-model="form.product_id" class="select-field">
+                        <option value="">Select</option>
+                        <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }}</option>
+                    </select>
                 </div>
             </div>
-        </div>
+            <div class="form-row-4" style="margin-top: 6px;">
+                <div class="form-group">
+                    <label class="form-label">Quantity *</label>
+                    <input v-model="form.quantity" type="number" class="input-field" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Frequency *</label>
+                    <select v-model="form.frequency" class="select-field">
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                    </select>
+                </div>
+                <div class="form-group span-2">
+                    <label class="form-label">Start Date *</label>
+                    <input v-model="form.start_date" type="date" class="input-field" />
+                </div>
+            </div>
+            <template #footer>
+                <button class="btn" @click="showModal = false">Cancel</button>
+                <button class="btn btn-primary" @click="save" :disabled="saving">{{ saving ? 'Creating...' : 'Create' }}</button>
+            </template>
+        </AppModal>
     </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import api from '@/api'
+import AppModal from '@/components/AppModal.vue'
 
 const loading = ref(false)
 const saving = ref(false)

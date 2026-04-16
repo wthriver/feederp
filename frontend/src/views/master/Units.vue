@@ -37,52 +37,45 @@
             </table>
         </div>
 
-        <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
-            <div class="modal" style="max-width: 450px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">{{ editing ? 'Edit' : 'Add' }} Unit</h3>
-                    <button class="modal-close" @click="showModal = false">&times;</button>
+        <AppModal v-model="showModal" :title="editing ? 'Edit Unit' : 'Add Unit'" size="sm" :loading="saving">
+            <div class="form-row-4">
+                <div class="form-group">
+                    <label class="form-label">Code *</label>
+                    <input v-model="form.code" class="input-field" placeholder="e.g., KG" />
                 </div>
-                <div class="modal-body">
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Code *</label>
-                            <input v-model="form.code" class="input-field" placeholder="e.g., KG" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Symbol *</label>
-                            <input v-model="form.symbol" class="input-field" placeholder="e.g., kg" />
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Name *</label>
-                        <input v-model="form.name" class="input-field" placeholder="e.g., Kilogram" />
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Type</label>
-                        <select v-model="form.type" class="select-field">
-                            <option value="">Select Type</option>
-                            <option value="weight">Weight</option>
-                            <option value="volume">Volume</option>
-                            <option value="quantity">Quantity</option>
-                            <option value="length">Length</option>
-                        </select>
-                    </div>
+                <div class="form-group">
+                    <label class="form-label">Symbol *</label>
+                    <input v-model="form.symbol" class="input-field" placeholder="e.g., kg" />
                 </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="showModal = false">{{ $t('common.cancel') }}</button>
-                    <button class="btn btn-primary" @click="save" :disabled="saving">
-                        {{ saving ? 'Saving...' : $t('common.save') }}
-                    </button>
+                <div class="form-group span-2">
+                    <label class="form-label">Name *</label>
+                    <input v-model="form.name" class="input-field" placeholder="e.g., Kilogram" />
                 </div>
             </div>
-        </div>
+            <div class="form-group" style="margin-top: 6px;">
+                <label class="form-label">Type</label>
+                <select v-model="form.type" class="select-field">
+                    <option value="">Select</option>
+                    <option value="weight">Weight</option>
+                    <option value="volume">Volume</option>
+                    <option value="quantity">Quantity</option>
+                    <option value="length">Length</option>
+                </select>
+            </div>
+            <template #footer>
+                <button class="btn" @click="showModal = false">{{ $t('common.cancel') }}</button>
+                <button class="btn btn-primary" @click="save" :disabled="saving">
+                    {{ saving ? 'Saving...' : $t('common.save') }}
+                </button>
+            </template>
+        </AppModal>
     </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import api from '@/api'
+import AppModal from '@/components/AppModal.vue'
 
 const loading = ref(false)
 const saving = ref(false)

@@ -58,8 +58,9 @@ const messages = {
             routes: 'Routes',
             jobCards: 'Job Cards',
             recurringOrders: 'Recurring Orders',
-            accounts: 'Accounts',
-            transactions: 'Transactions',
+            notifications: 'Notifications',
+            approvals: 'Approvals',
+            documents: 'Documents',
             priceList: 'Price List',
             discountRule: 'Discount Rule',
             creditNote: 'Credit Note',
@@ -385,7 +386,10 @@ const messages = {
             regions: 'অঞ্চল',
             routes: 'রুট',
             jobCards: 'জব কার্ড',
-            recurringOrders: 'পুনরাবৃত্ত অর্ডার'
+            recurringOrders: 'পুনরাবৃত্ত অর্ডার',
+            notifications: 'নোটিফিকেশন',
+            approvals: 'অনুমোদন',
+            documents: 'ডকুমেন্টস'
         },
         common: {
             search: 'খুঁজুন...',
@@ -651,8 +655,8 @@ const messages = {
 
 const i18n = createI18n({
     legacy: false,
-    locale: localStorage.getItem('locale') || 'en',
-    fallbackLocale: 'en',
+    locale: localStorage.getItem('locale') || 'bn',
+    fallbackLocale: 'bn',
     messages
 })
 

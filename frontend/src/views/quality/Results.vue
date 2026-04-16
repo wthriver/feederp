@@ -66,86 +66,77 @@
             </div>
         </div>
 
-        <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
-            <div class="modal" style="max-width: 600px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">New QC Test Result</h3>
-                    <button class="modal-close" @click="closeModal">&times;</button>
+        <AppModal v-model="showModal" title="New QC Test Result" size="md" :loading="saving">
+            <div class="form-row-4">
+                <div class="form-group">
+                    <label class="form-label">Test Type</label>
+                    <select v-model="form.reference_type" class="select-field" @change="loadReferenceOptions">
+                        <option value="inward_item">Raw Material</option>
+                        <option value="batch">Production Batch</option>
+                    </select>
                 </div>
-                <div class="modal-body">
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Test Type</label>
-                            <select v-model="form.reference_type" class="select-field" @change="loadReferenceOptions">
-                                <option value="inward_item">Raw Material</option>
-                                <option value="batch">Production Batch</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Reference *</label>
-                            <select v-model="form.reference_id" class="select-field" required>
-                                <option value="">Select</option>
-                                <option v-for="r in referenceOptions" :key="r.id" :value="r.id">{{ r.number || r.name }}</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Parameter *</label>
-                            <select v-model="form.parameter_id" class="select-field" required>
-                                <option value="">Select Parameter</option>
-                                <option v-for="p in parameters" :key="p.id" :value="p.id">{{ p.name }} ({{ p.unit }})</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Test Date</label>
-                            <input v-model="form.tested_at" type="datetime-local" class="input-field" />
-                        </div>
-                    </div>
-
-                    <div class="form-row form-row-3">
-                        <div class="form-group">
-                            <label class="form-label">Test Value *</label>
-                            <input v-model.number="form.value" type="number" class="input-field" step="0.01" required />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Min Value</label>
-                            <input v-model.number="form.min_value" type="number" class="input-field" step="0.01" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Max Value</label>
-                            <input v-model.number="form.max_value" type="number" class="input-field" step="0.01" />
-                        </div>
-                    </div>
-
-                    <div class="result-preview" :class="{ pass: isPass, fail: !isPass }">
-                        <strong>Result:</strong> {{ isPass ? 'PASS' : 'FAIL' }}
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Remarks</label>
-                        <textarea v-model="form.remarks" class="input-field" rows="2"></textarea>
-                    </div>
+                <div class="form-group">
+                    <label class="form-label">Reference *</label>
+                    <select v-model="form.reference_id" class="select-field" required>
+                        <option value="">Select</option>
+                        <option v-for="r in referenceOptions" :key="r.id" :value="r.id">{{ r.number || r.name }}</option>
+                    </select>
                 </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="closeModal">{{ $t('common.cancel') }}</button>
-                    <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+                <div class="form-group">
+                    <label class="form-label">Parameter *</label>
+                    <select v-model="form.parameter_id" class="select-field" required>
+                        <option value="">Select</option>
+                        <option v-for="p in parameters" :key="p.id" :value="p.id">{{ p.name }}</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Test Date</label>
+                    <input v-model="form.tested_at" type="datetime-local" class="input-field" />
                 </div>
             </div>
-        </div>
+            <div class="form-row-4" style="margin-top: 6px;">
+                <div class="form-group">
+                    <label class="form-label">Value *</label>
+                    <input v-model.number="form.value" type="number" class="input-field" step="0.01" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Min</label>
+                    <input v-model.number="form.min_value" type="number" class="input-field" step="0.01" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Max</label>
+                    <input v-model.number="form.max_value" type="number" class="input-field" step="0.01" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Result</label>
+                    <div class="result-preview" :class="{ pass: isPass, fail: !isPass }" style="margin: 0; padding: 6px 12px;">
+                        {{ isPass ? 'PASS' : 'FAIL' }}
+                    </div>
+                </div>
+            </div>
+            <div class="form-group" style="margin-top: 6px;">
+                <label class="form-label">Remarks</label>
+                <textarea v-model="form.remarks" class="input-field" rows="2"></textarea>
+            </div>
+            <template #footer>
+                <button class="btn" @click="closeModal">{{ $t('common.cancel') }}</button>
+                <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+            </template>
+        </AppModal>
     </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import api from '@/api'
+import AppModal from '@/components/AppModal.vue'
 
 const loading = ref(false)
 const data = ref([])
 const parameters = ref([])
 const referenceOptions = ref([])
 const showModal = ref(false)
+const saving = ref(false)
 const filter = reactive({ reference_id: '', reference_type: '', is_pass: '' })
 const meta = reactive({ page: 1, total: 0, totalPages: 0 })
 
@@ -214,12 +205,14 @@ async function save() {
         window.showToast?.({ type: 'error', message: 'Please fill required fields' })
         return
     }
+    saving.value = true
     try {
         await api.post('/quality/results', { ...form, is_pass: isPass.value ? 1 : 0 })
         window.showToast?.({ type: 'success', message: 'Result saved' })
         closeModal()
         loadData()
     } catch (error) { window.showToast?.({ type: 'error', message: 'Save failed' }) }
+    finally { saving.value = false }
 }
 
 function closeModal() { showModal.value = false }

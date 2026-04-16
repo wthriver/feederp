@@ -4,8 +4,9 @@ const { v4: uuidv4 } = require('uuid');
 const { query, queryOne, run, logActivity, getNextSequence, formatSequence } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/permissions');
+const { triggerWorkflow } = require('../utils/workflow');
 
-// Suppliers - Read-only reference (use /master/suppliers for full CRUD)
+// Suppliers - Read-only reference endpoint (use /master/suppliers for full CRUD)
 router.get('/suppliers', authenticate, async (req, res) => {
     try {
         const { search, page = 1, limit = 100 } = req.query;
@@ -32,32 +33,6 @@ router.get('/suppliers', authenticate, async (req, res) => {
             data: suppliers,
             meta: { page: parseInt(page), limit: parseInt(limit), total, totalPages: Math.ceil(total / limit) }
         });
-    } catch (error) {
-        res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
-    }
-});
-
-router.get('/suppliers/:id', authenticate, async (req, res) => {
-    try {
-        const supplier = queryOne(
-            'SELECT * FROM suppliers WHERE id = ? AND tenant_id = ?',
-            [req.params.id, req.tenantId]
-        );
-
-        if (!supplier) {
-            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Supplier not found' } });
-        }
-
-        const purchases = query(`
-            SELECT po.*, SUM(pi.amount) as total
-            FROM purchase_orders po
-            LEFT JOIN po_items pi ON po.id = pi.po_id
-            WHERE po.supplier_id = ?
-            GROUP BY po.id
-            ORDER BY po.created_at DESC LIMIT 10
-        `, [req.params.id]);
-
-        res.json({ success: true, data: { ...supplier, recent_purchases: purchases } });
     } catch (error) {
         res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
     }
@@ -170,9 +145,23 @@ router.post('/purchase-orders', authenticate, requirePermission('purchase', 'add
             run(itemStmt, [itemId, poId, item.raw_material_id, item.description, item.quantity, item.unit_id, item.rate, amount]);
         });
 
-        logActivity(req.tenantId, req.user.id, 'purchase', 'po_created', poId, null, { po_number: poNumber }, req);
+        const workflowResult = await triggerWorkflow(req.tenantId, req.user.id, 'purchase_order', poId, req);
+        if (workflowResult.triggered) {
+            run(`UPDATE purchase_orders SET workflow_id = ? WHERE id = ?`, [workflowResult.workflowId, poId]);
+        }
 
-        res.json({ success: true, data: { id: poId, po_number: poNumber }, message: 'Purchase order created successfully' });
+        logActivity(req.tenantId, req.user.id, 'purchase', 'po_created', poId, null, { po_number: poNumber, workflow: workflowResult.triggered }, req);
+
+        res.json({ 
+            success: true, 
+            data: { 
+                id: poId, 
+                po_number: poNumber,
+                workflow_triggered: workflowResult.triggered,
+                workflow_id: workflowResult.workflowId
+            }, 
+            message: workflowResult.triggered ? 'Purchase order created and pending approval' : 'Purchase order created successfully' 
+        });
     } catch (error) {
         res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
     }
@@ -215,8 +204,13 @@ router.put('/purchase-orders/:id', authenticate, requirePermission('purchase', '
 
 router.post('/purchase-orders/:id/approve', authenticate, requirePermission('purchase', 'approve'), async (req, res) => {
     try {
-        run(`UPDATE purchase_orders SET status = 'sent', approved_by = ? WHERE id = ? AND status = 'draft'`,
-            [req.user.id, req.params.id]);
+        const existing = queryOne('SELECT id FROM purchase_orders WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
+        if (!existing) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Purchase order not found' } });
+        }
+
+        run(`UPDATE purchase_orders SET status = 'sent', approved_by = ? WHERE id = ? AND tenant_id = ? AND status = 'draft'`,
+            [req.user.id, req.params.id, req.tenantId]);
 
         logActivity(req.tenantId, req.user.id, 'purchase', 'po_approved', req.params.id, null, { status: 'sent' }, req);
 
@@ -228,8 +222,13 @@ router.post('/purchase-orders/:id/approve', authenticate, requirePermission('pur
 
 router.post('/purchase-orders/:id/cancel', authenticate, requirePermission('purchase', 'delete'), async (req, res) => {
     try {
-        run(`UPDATE purchase_orders SET status = 'cancelled' WHERE id = ? AND status IN ('draft', 'sent')`,
-            [req.params.id]);
+        const existing = queryOne('SELECT id FROM purchase_orders WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
+        if (!existing) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Purchase order not found' } });
+        }
+
+        run(`UPDATE purchase_orders SET status = 'cancelled' WHERE id = ? AND tenant_id = ? AND status IN ('draft', 'sent')`,
+            [req.params.id, req.tenantId]);
 
         logActivity(req.tenantId, req.user.id, 'purchase', 'po_cancelled', req.params.id, null, { status: 'cancelled' }, req);
 
@@ -405,9 +404,23 @@ router.post('/goods-inward', authenticate, requirePermission('purchase', 'add'),
             }
         }
 
-        logActivity(req.tenantId, req.user.id, 'purchase', 'goods_inward_created', inwardId, null, { grn_number: grnNumber }, req);
+        const workflowResult = await triggerWorkflow(req.tenantId, req.user.id, 'goods_inward', inwardId, req);
+        if (workflowResult.triggered) {
+            run(`UPDATE goods_inward SET workflow_id = ? WHERE id = ?`, [workflowResult.workflowId, inwardId]);
+        }
 
-        res.json({ success: true, data: { id: inwardId, grn_number: grnNumber }, message: 'Goods inward recorded successfully' });
+        logActivity(req.tenantId, req.user.id, 'purchase', 'goods_inward_created', inwardId, null, { grn_number: grnNumber, workflow: workflowResult.triggered }, req);
+
+        res.json({ 
+            success: true, 
+            data: { 
+                id: inwardId, 
+                grn_number: grnNumber,
+                workflow_triggered: workflowResult.triggered,
+                workflow_id: workflowResult.workflowId
+            }, 
+            message: workflowResult.triggered ? 'Goods inward recorded and pending approval' : 'Goods inward recorded successfully' 
+        });
     } catch (error) {
         console.error('Goods inward error:', error);
         res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
@@ -488,9 +501,23 @@ router.post('/purchase-invoices', authenticate, requirePermission('purchase', 'a
             [invoiceId, req.tenantId, invoice_number || piNumber, supplier_id, goods_inward_id, invoice_date,
              invoice_amount, tax_amount || 0, total_amount, due_date, notes, req.user.id]);
 
-        logActivity(req.tenantId, req.user.id, 'purchase', 'purchase_invoice_created', invoiceId, null, { invoice_number }, req);
+        const workflowResult = await triggerWorkflow(req.tenantId, req.user.id, 'purchase_invoice', invoiceId, req);
+        if (workflowResult.triggered) {
+            run(`UPDATE purchase_invoices SET workflow_id = ? WHERE id = ?`, [workflowResult.workflowId, invoiceId]);
+        }
 
-        res.json({ success: true, data: { id: invoiceId, invoice_number: invoice_number || piNumber }, message: 'Purchase invoice created successfully' });
+        logActivity(req.tenantId, req.user.id, 'purchase', 'purchase_invoice_created', invoiceId, null, { invoice_number, workflow: workflowResult.triggered }, req);
+
+        res.json({ 
+            success: true, 
+            data: { 
+                id: invoiceId, 
+                invoice_number: invoice_number || piNumber,
+                workflow_triggered: workflowResult.triggered,
+                workflow_id: workflowResult.workflowId
+            }, 
+            message: workflowResult.triggered ? 'Purchase invoice created and pending approval' : 'Purchase invoice created successfully' 
+        });
     } catch (error) {
         res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
     }
@@ -542,6 +569,46 @@ router.post('/purchase-invoices/:id/pay', authenticate, requirePermission('finan
         logActivity(req.tenantId, req.user.id, 'finance', 'purchase_payment_made', req.params.id, null, { amount: paymentAmount }, req);
 
         res.json({ success: true, data: { id: paymentId, payment_number: paymentNumber }, message: 'Payment recorded successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+    }
+});
+
+router.get('/purchase-invoices/:id', authenticate, async (req, res) => {
+    try {
+        const invoice = queryOne(`
+            SELECT pi.*, s.name as supplier_name, gi.grn_number
+            FROM purchase_invoices pi
+            LEFT JOIN suppliers s ON pi.supplier_id = s.id
+            LEFT JOIN goods_inward gi ON pi.goods_inward_id = gi.id
+            WHERE pi.id = ? AND pi.tenant_id = ?
+        `, [req.params.id, req.tenantId]);
+
+        if (!invoice) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Purchase invoice not found' } });
+        }
+
+        res.json({ success: true, data: invoice });
+    } catch (error) {
+        res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+    }
+});
+
+router.delete('/purchase-invoices/:id', authenticate, requirePermission('purchase', 'delete'), async (req, res) => {
+    try {
+        const invoice = queryOne('SELECT * FROM purchase_invoices WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
+        if (!invoice) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Purchase invoice not found' } });
+        }
+
+        if (invoice.payment_status === 'paid' || invoice.amount_paid > 0) {
+            return res.status(400).json({ success: false, error: { code: 'CANNOT_DELETE', message: 'Cannot delete invoice with payments' } });
+        }
+
+        run('UPDATE purchase_invoices SET is_active = 0 WHERE id = ?', [req.params.id]);
+        logActivity(req.tenantId, req.user.id, 'purchase', 'purchase_invoice_deleted', req.params.id, null, {}, req);
+
+        res.json({ success: true, message: 'Purchase invoice deleted successfully' });
     } catch (error) {
         res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
     }

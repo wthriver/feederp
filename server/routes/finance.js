@@ -33,14 +33,14 @@ router.put('/accounts/:id', authenticate, requirePermission('finance', 'edit'), 
     try {
         const { name, name_bn, group_id, type, party_type, party_id, is_active } = req.body;
         
-        const existing = queryOne('SELECT * FROM accounts WHERE id = ?', [req.params.id]);
+        const existing = queryOne('SELECT * FROM accounts WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
         if (!existing) {
             return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Account not found' } });
         }
 
         run(`UPDATE accounts SET name = ?, name_bn = ?, group_id = ?, type = ?, party_type = ?, party_id = ?, is_active = ?
-             WHERE id = ?`,
-            [name, name_bn, group_id, type, party_type, party_id, is_active ?? 1, req.params.id]);
+             WHERE id = ? AND tenant_id = ?`,
+            [name, name_bn, group_id, type, party_type, party_id, is_active ?? 1, req.params.id, req.tenantId]);
 
         res.json({ success: true, message: 'Account updated successfully' });
     } catch (error) {
@@ -50,13 +50,18 @@ router.put('/accounts/:id', authenticate, requirePermission('finance', 'edit'), 
 
 router.delete('/accounts/:id', authenticate, requirePermission('finance', 'delete'), async (req, res) => {
     try {
-        const hasTxn = queryOne('SELECT id FROM transactions WHERE account_id = ? OR opposite_account_id = ? LIMIT 1', 
-            [req.params.id, req.params.id]);
+        const existing = queryOne('SELECT id FROM accounts WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
+        if (!existing) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Account not found' } });
+        }
+
+        const hasTxn = queryOne('SELECT id FROM transactions WHERE (account_id = ? OR opposite_account_id = ?) AND tenant_id = ? LIMIT 1', 
+            [req.params.id, req.params.id, req.tenantId]);
         if (hasTxn) {
             return res.status(400).json({ success: false, error: { code: 'CANNOT_DELETE', message: 'Account has transactions' } });
         }
 
-        run('UPDATE accounts SET is_active = 0 WHERE id = ?', [req.params.id]);
+        run('UPDATE accounts SET is_active = 0 WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
         res.json({ success: true, message: 'Account deleted successfully' });
     } catch (error) {
         res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
@@ -65,13 +70,13 @@ router.delete('/accounts/:id', authenticate, requirePermission('finance', 'delet
 
 router.get('/accounts/:id/ledger', authenticate, async (req, res) => {
     try {
-        const account = queryOne('SELECT * FROM accounts WHERE id = ?', [req.params.id]);
+        const account = queryOne('SELECT * FROM accounts WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
         if (!account) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Account not found' } });
 
         const transactions = query(`
-            SELECT * FROM transactions WHERE account_id = ? OR opposite_account_id = ?
+            SELECT * FROM transactions WHERE (account_id = ? OR opposite_account_id = ?) AND tenant_id = ?
             ORDER BY date DESC, created_at DESC LIMIT 100
-        `, [req.params.id, req.params.id]);
+        `, [req.params.id, req.params.id, req.tenantId]);
 
         res.json({ success: true, data: { account, transactions } });
     } catch (error) {
@@ -121,16 +126,16 @@ router.post('/transactions', authenticate, requirePermission('finance', 'add'), 
             [txnId, req.tenantId, voucherNumber, voucher_type, date, account_id, opposite_account_id, debit || 0, credit || 0, narration, reference_type, reference_id, req.user.id]);
 
         if (account_id && debit > 0) {
-            run('UPDATE accounts SET current_balance = current_balance + ? WHERE id = ?', [debit, account_id]);
+            run('UPDATE accounts SET current_balance = current_balance + ? WHERE id = ? AND tenant_id = ?', [debit, account_id, req.tenantId]);
         }
         if (account_id && credit > 0) {
-            run('UPDATE accounts SET current_balance = current_balance - ? WHERE id = ?', [credit, account_id]);
+            run('UPDATE accounts SET current_balance = current_balance - ? WHERE id = ? AND tenant_id = ?', [credit, account_id, req.tenantId]);
         }
         if (opposite_account_id && debit > 0) {
-            run('UPDATE accounts SET current_balance = current_balance - ? WHERE id = ?', [debit, opposite_account_id]);
+            run('UPDATE accounts SET current_balance = current_balance - ? WHERE id = ? AND tenant_id = ?', [debit, opposite_account_id, req.tenantId]);
         }
         if (opposite_account_id && credit > 0) {
-            run('UPDATE accounts SET current_balance = current_balance + ? WHERE id = ?', [credit, opposite_account_id]);
+            run('UPDATE accounts SET current_balance = current_balance + ? WHERE id = ? AND tenant_id = ?', [credit, opposite_account_id, req.tenantId]);
         }
 
         logActivity(req.tenantId, req.user.id, 'finance', 'transaction_created', txnId, null, { voucher_number: voucherNumber }, req);
@@ -178,14 +183,14 @@ router.post('/payments', authenticate, requirePermission('finance', 'add'), asyn
             [paymentId, req.tenantId, paymentNumber, payment_date, party_type, party_id, account_id, amount, payment_mode, reference_number, bank_id, cheque_number, cheque_date, notes, req.user.id]);
 
         if (party_type === 'supplier') {
-            const inv = queryOne('SELECT id, amount_due FROM purchase_invoices WHERE supplier_id = ? AND payment_status != ? ORDER BY invoice_date LIMIT 1', [party_id, 'paid']);
+            const inv = queryOne('SELECT id, amount_due FROM purchase_invoices WHERE supplier_id = ? AND tenant_id = ? AND payment_status != ? ORDER BY invoice_date LIMIT 1', [party_id, req.tenantId, 'paid']);
             if (inv && inv.amount_due > 0) {
                 const adjust = Math.min(amount, inv.amount_due);
                 run('UPDATE purchase_invoices SET amount_paid = amount_paid + ?, amount_due = amount_due - ?, payment_status = CASE WHEN amount_due - ? <= 0 THEN ? ELSE ? END WHERE id = ?',
                     [adjust, adjust, adjust, 'paid', 'partial', inv.id]);
             }
         } else if (party_type === 'customer') {
-            run('UPDATE customers SET outstanding = outstanding - ? WHERE id = ?', [amount, party_id]);
+            run('UPDATE customers SET outstanding = outstanding - ? WHERE id = ? AND tenant_id = ?', [amount, party_id, req.tenantId]);
         }
 
         logActivity(req.tenantId, req.user.id, 'finance', 'payment_made', paymentId, null, { payment_number: paymentNumber, amount }, req);

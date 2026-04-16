@@ -1,21 +1,26 @@
 <template>
-    <div class="data-page">
-        <div class="page-header">
+    <div class='data-page'>
+        <div class='page-header'>
             <h1>{{ pageName }}</h1>
-            <button v-if="hasAddPermission" class="btn btn-primary" @click="$emit('add')">+ {{ $t('common.add') }}</button>
+            <button v-if='hasAddPermission' class='btn btn-primary' @click='$emit(\"add\")'>+ {{ $t('common.add') }}</button>
         </div>
-        <div class="toolbar">
-            <input v-model="search" type="text" :placeholder="$t('common.search')" class="input-field" @input="debounceSearch" />
-            <slot name="filters"></slot>
+        <div class='toolbar'>
+            <input v-model='search' type='text' :placeholder='$t(\"common.search\")' class='input-field' @input='debounceSearch' />
+            <slot name='filters'></slot>
         </div>
-        <div v-if="loading" class="loading"><div class="spinner"></div></div>
+        <div v-if='loading' class='loading'><div class='spinner'></div></div>
         <div v-else>
-            <slot name="table"></slot>
+            <slot name='table'></slot>
         </div>
-        <div class="pagination">
-            <div class="pagination-info">Total: {{ meta.total }}</div>
+        <div class='pagination'>
+            <div class='pagination-info'>Total: {{ meta.total }}</div>
+            <div class='pagination-controls' v-if='meta.totalPages > 1'>
+                <button class='btn btn-sm' :disabled='meta.page <= 1' @click='changePage(meta.page - 1)'>Prev</button>
+                <span class='page-number'>Page {{ meta.page }} of {{ meta.totalPages }}</span>
+                <button class='btn btn-sm' :disabled='meta.page >= meta.totalPages' @click='changePage(meta.page + 1)'>Next</button>
+            </div>
         </div>
-        <slot name="modal"></slot>
+        <slot name='modal'></slot>
     </div>
 </template>
 
@@ -44,7 +49,12 @@ const hasAddPermission = computed(() => {
 })
 
 function debounceSearch() {
-    setTimeout(() => loadData(), 300)
+    setTimeout(() => { meta.page = 1; loadData() }, 300)
+}
+
+function changePage(newPage) {
+    meta.page = newPage
+    loadData()
 }
 
 async function loadData() {
@@ -57,6 +67,7 @@ async function loadData() {
         }
     } catch (error) {
         console.error(error)
+        window.showToast?.({ type: 'error', message: 'Failed to load data' })
     } finally {
         loading.value = false
     }
@@ -64,3 +75,16 @@ async function loadData() {
 
 defineExpose({ loadData, data, loading, meta })
 </script>
+
+<style scoped>
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+}
+.page-number {
+    font-size: 14px;
+    color: #666;
+}
+</style>

@@ -10,3 +10,573 @@ Error: listen EADDRINUSE: address already in use :::3000
     at listenInCluster (node:net:1961:12)
     at Server.listen (node:net:2063:7)
     at startServer (D:\Cattle feed\feedmill-erp\server\index.js:269:16)
+[2026-04-11T11:43:32.478Z] Uncaught Exception: EPIPE: broken pipe, write
+Error: EPIPE: broken pipe, write
+    at Socket._write (node:internal/net:61:18)
+    at writeOrBuffer (node:internal/streams/writable:570:12)
+    at _write (node:internal/streams/writable:499:10)
+    at Writable.write (node:internal/streams/writable:508:10)
+    at console.value (node:internal/console/constructor:310:16)
+    at console.log (node:internal/console/constructor:385:26)
+    at Socket.<anonymous> (D:\Cattle feed\feedmill-erp\server\index.js:95:17)
+    at Socket.emit (node:events:519:28)
+    at Socket.emitUntyped (D:\Cattle feed\feedmill-erp\node_modules\socket.io\dist\typed-events.js:69:22)
+    at D:\Cattle feed\feedmill-erp\node_modules\socket.io\dist\socket.js:697:39
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)
+[2026-04-14T08:18:50.441Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3000
+Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:277:16)
+[2026-04-14T08:18:57.874Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3000
+Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:277:16)
+[2026-04-14T08:23:02.011Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3000
+Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:277:16)
+[2026-04-14T08:25:01.678Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3000
+Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:277:16)
+[2026-04-14T08:26:44.427Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3000
+Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:277:16)
+[2026-04-14T08:31:21.762Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3000
+Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:277:16)
+[2026-04-14T08:34:06.153Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3000
+Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:277:16)
+[2026-04-14T08:35:19.349Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3000
+Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:278:16)
+[2026-04-14T08:36:01.169Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3000
+Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:279:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T09:16:18.071Z] Not allowed by CORS
+Error: Not allowed by CORS
+    at origin (D:\Cattle feed\feedmill-erp\server\index.js:141:22)
+    at D:\Cattle feed\feedmill-erp\node_modules\cors\lib\index.js:219:13
+    at optionsCallback (D:\Cattle feed\feedmill-erp\node_modules\cors\lib\index.js:199:9)
+    at corsMiddleware (D:\Cattle feed\feedmill-erp\node_modules\cors\lib\index.js:204:7)
+    at Layer.handle [as handle_request] (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:328:13)
+    at D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:286:9
+    at Function.process_params (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:346:12)
+    at next (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:280:10)
+    at expressInit (D:\Cattle feed\feedmill-erp\node_modules\express\lib\middleware\init.js:40:5)
+    at Layer.handle [as handle_request] (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:328:13)
+    at D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:286:9
+    at Function.process_params (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:346:12)
+    at next (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:280:10)
+    at query (D:\Cattle feed\feedmill-erp\node_modules\express\lib\middleware\query.js:45:5)
+[2026-04-14T09:16:47.677Z] Not allowed by CORS
+Error: Not allowed by CORS
+    at origin (D:\Cattle feed\feedmill-erp\server\index.js:141:22)
+    at D:\Cattle feed\feedmill-erp\node_modules\cors\lib\index.js:219:13
+    at optionsCallback (D:\Cattle feed\feedmill-erp\node_modules\cors\lib\index.js:199:9)
+    at corsMiddleware (D:\Cattle feed\feedmill-erp\node_modules\cors\lib\index.js:204:7)
+    at Layer.handle [as handle_request] (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:328:13)
+    at D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:286:9
+    at Function.process_params (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:346:12)
+    at next (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:280:10)
+    at expressInit (D:\Cattle feed\feedmill-erp\node_modules\express\lib\middleware\init.js:40:5)
+    at Layer.handle [as handle_request] (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:328:13)
+    at D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:286:9
+    at Function.process_params (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:346:12)
+    at next (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:280:10)
+    at query (D:\Cattle feed\feedmill-erp\node_modules\express\lib\middleware\query.js:45:5)
+[2026-04-14T09:26:04.650Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:279:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T10:43:19.107Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:279:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T10:43:38.330Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:279:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T10:45:31.714Z] Not allowed by CORS
+Error: Not allowed by CORS
+    at origin (D:\Cattle feed\feedmill-erp\server\index.js:141:22)
+    at D:\Cattle feed\feedmill-erp\node_modules\cors\lib\index.js:219:13
+    at optionsCallback (D:\Cattle feed\feedmill-erp\node_modules\cors\lib\index.js:199:9)
+    at corsMiddleware (D:\Cattle feed\feedmill-erp\node_modules\cors\lib\index.js:204:7)
+    at Layer.handle [as handle_request] (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:328:13)
+    at D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:286:9
+    at Function.process_params (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:346:12)
+    at next (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:280:10)
+    at expressInit (D:\Cattle feed\feedmill-erp\node_modules\express\lib\middleware\init.js:40:5)
+    at Layer.handle [as handle_request] (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:328:13)
+    at D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:286:9
+    at Function.process_params (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:346:12)
+    at next (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:280:10)
+    at query (D:\Cattle feed\feedmill-erp\node_modules\express\lib\middleware\query.js:45:5)
+[2026-04-14T10:46:20.173Z] Not allowed by CORS
+Error: Not allowed by CORS
+    at origin (D:\Cattle feed\feedmill-erp\server\index.js:141:22)
+    at D:\Cattle feed\feedmill-erp\node_modules\cors\lib\index.js:219:13
+    at optionsCallback (D:\Cattle feed\feedmill-erp\node_modules\cors\lib\index.js:199:9)
+    at corsMiddleware (D:\Cattle feed\feedmill-erp\node_modules\cors\lib\index.js:204:7)
+    at Layer.handle [as handle_request] (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:328:13)
+    at D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:286:9
+    at Function.process_params (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:346:12)
+    at next (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:280:10)
+    at expressInit (D:\Cattle feed\feedmill-erp\node_modules\express\lib\middleware\init.js:40:5)
+    at Layer.handle [as handle_request] (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:328:13)
+    at D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:286:9
+    at Function.process_params (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:346:12)
+    at next (D:\Cattle feed\feedmill-erp\node_modules\express\lib\router\index.js:280:10)
+    at query (D:\Cattle feed\feedmill-erp\node_modules\express\lib\middleware\query.js:45:5)
+[2026-04-14T10:46:27.571Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:279:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T11:59:49.035Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:279:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T16:41:31.007Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3005
+Error: listen EADDRINUSE: address already in use :::3005
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:279:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T19:00:13.114Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T19:03:39.241Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T19:15:57.135Z] Unhandled Rejection: Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client
+[2026-04-14T19:16:22.052Z] Unhandled Rejection: Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client
+[2026-04-14T19:18:48.075Z] Unhandled Rejection: Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client
+[2026-04-14T19:18:58.258Z] Unhandled Rejection: Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client
+[2026-04-14T19:26:44.962Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T19:28:13.109Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T19:28:22.196Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T19:32:30.437Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T19:32:33.380Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T19:33:50.969Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T19:34:29.253Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T19:34:32.179Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T19:35:00.318Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T19:37:17.097Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T19:37:22.281Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T19:37:23.842Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T19:41:05.196Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T19:41:06.814Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T19:41:28.179Z] Unhandled Rejection: Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client
+[2026-04-14T19:52:27.253Z] Unhandled Rejection: Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client
+[2026-04-14T19:55:15.331Z] Unhandled Rejection: Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client
+[2026-04-14T19:55:16.040Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T19:55:20.717Z] Unhandled Rejection: Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client
+[2026-04-14T19:56:09.082Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T19:56:11.019Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T20:00:20.469Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T20:00:22.154Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T20:00:53.718Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T20:00:55.474Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T20:01:25.412Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T20:01:27.407Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T20:04:29.329Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T20:04:39.039Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T20:04:40.617Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T20:05:16.514Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T20:05:18.338Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T20:05:23.241Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T20:09:28.131Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T20:10:26.681Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T20:10:28.635Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T20:11:34.935Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T20:11:42.142Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T20:15:03.150Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T20:16:32.221Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T20:18:47.671Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T20:18:52.689Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T20:23:15.083Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-14T20:23:33.150Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:299:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-15T10:09:19.704Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:318:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-15T10:09:40.368Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:318:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-15T10:10:21.528Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:318:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-15T19:00:04.915Z] Uncaught Exception: EPIPE: broken pipe, write
+Error: EPIPE: broken pipe, write
+    at Socket._write (node:internal/net:61:18)
+    at writeOrBuffer (node:internal/streams/writable:570:12)
+    at _write (node:internal/streams/writable:499:10)
+    at Writable.write (node:internal/streams/writable:508:10)
+    at console.value (node:internal/console/constructor:310:16)
+    at console.log (node:internal/console/constructor:385:26)
+    at Socket.<anonymous> (D:\Cattle feed\feedmill-erp\server\index.js:143:17)
+    at Socket.emit (node:events:519:28)
+    at Socket.emitReserved (D:\Cattle feed\feedmill-erp\node_modules\socket.io\dist\typed-events.js:56:22)
+    at Socket._onclose (D:\Cattle feed\feedmill-erp\node_modules\socket.io\dist\socket.js:554:14)
+    at Client.onclose (D:\Cattle feed\feedmill-erp\node_modules\socket.io\dist\client.js:253:20)
+    at Socket.emit (node:events:531:35)
+    at Socket.onClose (D:\Cattle feed\feedmill-erp\node_modules\engine.io\build\socket.js:320:18)
+    at Timeout.<anonymous> (D:\Cattle feed\feedmill-erp\node_modules\engine.io\build\socket.js:155:18)
+    at listOnTimeout (node:internal/timers:581:17)
+    at process.processTimers (node:internal/timers:519:7)
+[2026-04-16T07:10:12.893Z] Unhandled Rejection: Error: Tenant ID required. Provide req object with tenantId or pass tenantId as third parameter.
+[2026-04-16T07:10:51.641Z] Unhandled Rejection: Error: Tenant ID required. Provide req object with tenantId or pass tenantId as third parameter.
+[2026-04-16T07:13:21.345Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:428:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-16T07:13:51.003Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:428:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-16T07:15:15.887Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:428:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+{"level":"error","message":"Application Error Not allowed by CORS","method":"POST","path":"/api/auth/login","query":{},"service":"feedmill-erp","stack":"Error: Not allowed by CORS\n    at origin (D:\\Cattle feed\\feedmill-erp\\server\\index.js:194:22)\n    at D:\\Cattle feed\\feedmill-erp\\node_modules\\cors\\lib\\index.js:219:13\n    at optionsCallback (D:\\Cattle feed\\feedmill-erp\\node_modules\\cors\\lib\\index.js:199:9)\n    at corsMiddleware (D:\\Cattle feed\\feedmill-erp\\node_modules\\cors\\lib\\index.js:204:7)\n    at Layer.handle [as handle_request] (D:\\Cattle feed\\feedmill-erp\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at trim_prefix (D:\\Cattle feed\\feedmill-erp\\node_modules\\express\\lib\\router\\index.js:328:13)\n    at D:\\Cattle feed\\feedmill-erp\\node_modules\\express\\lib\\router\\index.js:286:9\n    at Function.process_params (D:\\Cattle feed\\feedmill-erp\\node_modules\\express\\lib\\router\\index.js:346:12)\n    at next (D:\\Cattle feed\\feedmill-erp\\node_modules\\express\\lib\\router\\index.js:280:10)\n    at expressInit (D:\\Cattle feed\\feedmill-erp\\node_modules\\express\\lib\\middleware\\init.js:40:5)\n    at Layer.handle [as handle_request] (D:\\Cattle feed\\feedmill-erp\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at trim_prefix (D:\\Cattle feed\\feedmill-erp\\node_modules\\express\\lib\\router\\index.js:328:13)\n    at D:\\Cattle feed\\feedmill-erp\\node_modules\\express\\lib\\router\\index.js:286:9\n    at Function.process_params (D:\\Cattle feed\\feedmill-erp\\node_modules\\express\\lib\\router\\index.js:346:12)\n    at next (D:\\Cattle feed\\feedmill-erp\\node_modules\\express\\lib\\router\\index.js:280:10)\n    at query (D:\\Cattle feed\\feedmill-erp\\node_modules\\express\\lib\\middleware\\query.js:45:5)","timestamp":"2026-04-16 13:23:01"}
+[2026-04-16T07:29:38.738Z] Unhandled Rejection: Error: Tenant ID required. Provide req object with tenantId or pass tenantId as third parameter.
+[2026-04-16T07:32:14.732Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:428:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-16T07:54:57.566Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:446:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-16T07:55:07.257Z] Uncaught Exception: listen EADDRINUSE: address already in use :::3006
+Error: listen EADDRINUSE: address already in use :::3006
+    at Server.setupListenHandle [as _listen2] (node:net:1904:16)
+    at listenInCluster (node:net:1961:12)
+    at Server.listen (node:net:2063:7)
+    at startServer (D:\Cattle feed\feedmill-erp\server\index.js:446:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2026-04-16T07:55:14.006Z] Unhandled Rejection: Error: Tenant ID required. Provide req object with tenantId or pass tenantId as third parameter.

@@ -47,62 +47,51 @@
             </table>
         </div>
 
-        <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
-            <div class="modal" style="max-width: 600px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">Create Job Card</h3>
-                    <button class="modal-close" @click="showModal = false">&times;</button>
+        <AppModal v-model="showModal" title="Create Job Card" size="sm" :loading="saving">
+            <div class="form-row-4">
+                <div class="form-group span-3">
+                    <label class="form-label">Title *</label>
+                    <input v-model="form.title" class="input-field" />
                 </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label class="form-label">Title *</label>
-                        <input v-model="form.title" class="input-field" placeholder="Maintenance work" />
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Description</label>
-                        <textarea v-model="form.description" class="input-field" rows="2"></textarea>
-                    </div>
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Machine</label>
-                            <select v-model="form.machine_id" class="select-field">
-                                <option value="">Select Machine</option>
-                                <option v-for="m in machines" :key="m.id" :value="m.id">{{ m.name }}</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Assigned To</label>
-                            <input v-model="form.assigned_to" class="input-field" placeholder="Operator name" />
-                        </div>
-                    </div>
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Priority</label>
-                            <select v-model="form.priority" class="select-field">
-                                <option value="low">Low</option>
-                                <option value="medium">Medium</option>
-                                <option value="high">High</option>
-                                <option value="urgent">Urgent</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Scheduled Date</label>
-                            <input v-model="form.scheduled_date" type="date" class="input-field" />
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="showModal = false">Cancel</button>
-                    <button class="btn btn-primary" @click="save" :disabled="saving">{{ saving ? 'Creating...' : 'Create' }}</button>
+                <div class="form-group">
+                    <label class="form-label">Priority</label>
+                    <select v-model="form.priority" class="select-field">
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="urgent">Urgent</option>
+                    </select>
                 </div>
             </div>
-        </div>
+            <div class="form-group" style="margin-top: 6px;">
+                <label class="form-label">Description</label>
+                <textarea v-model="form.description" class="input-field" rows="2"></textarea>
+            </div>
+            <div class="form-row-4" style="margin-top: 6px;">
+                <div class="form-group">
+                    <label class="form-label">Machine</label>
+                    <select v-model="form.machine_id" class="select-field">
+                        <option value="">Select</option>
+                        <option v-for="m in machines" :key="m.id" :value="m.id">{{ m.name }}</option>
+                    </select>
+                </div>
+                <div class="form-group span-3">
+                    <label class="form-label">Assigned To</label>
+                    <input v-model="form.assigned_to" class="input-field" />
+                </div>
+            </div>
+            <template #footer>
+                <button class="btn" @click="showModal = false">Cancel</button>
+                <button class="btn btn-primary" @click="save">Create</button>
+            </template>
+        </AppModal>
     </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import api from '@/api'
+import AppModal from '@/components/AppModal.vue'
 
 const loading = ref(false)
 const saving = ref(false)

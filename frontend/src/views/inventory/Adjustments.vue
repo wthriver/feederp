@@ -52,99 +52,126 @@
             <div class="pagination-info">Total: {{ meta.total }}</div>
         </div>
 
-        <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
-            <div class="modal" style="max-width: 800px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">Stock Adjustment</h3>
-                    <button class="modal-close" @click="closeModal">&times;</button>
+        <AppModal v-model="showModal" :title="'Stock Adjustment'" size="lg" :loading="saving">
+            <div class="form-row-4">
+                <div class="form-group">
+                    <label class="form-label">Adjustment #</label>
+                    <input type="text" class="input-field" :value="form.adjustment_number" disabled placeholder="Auto" />
                 </div>
-                <div class="modal-body">
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Godown *</label>
-                            <select v-model="form.godown_id" class="select-field" required @change="loadStockItems">
-                                <option value="">Select</option>
-                                <option v-for="g in godowns" :key="g.id" :value="g.id">{{ g.name }}</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Date *</label>
-                            <input v-model="form.adjustment_date" type="date" class="input-field" required />
-                        </div>
-                    </div>
-
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Reason</label>
-                            <select v-model="form.reason" class="select-field">
-                                <option value="">Select Reason</option>
-                                <option value="damaged">Damaged</option>
-                                <option value="expired">Expired</option>
-                                <option value="theft">Theft/Loss</option>
-                                <option value="count_error">Count Error</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Notes</label>
-                            <input v-model="form.notes" class="input-field" />
-                        </div>
-                    </div>
-
-                    <div class="items-section">
-                        <div class="section-header">
-                            <h4>Items</h4>
-                            <button type="button" class="btn btn-sm" @click="addItem" :disabled="!form.godown_id">+ Add Item</button>
-                        </div>
-                        <table class="sheet-grid">
-                            <thead>
-                                <tr>
-                                    <th>Item</th>
-                                    <th>Current Stock</th>
-                                    <th>Adjustment</th>
-                                    <th>New Stock</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="(item, idx) in form.items" :key="idx">
-                                    <td>
-                                        <select v-model="item.item_id" class="select-field" @change="selectItem(item)">
-                                            <option value="">Select</option>
-                                            <option v-for="s in stockItems" :key="s.item_id" :value="s.item_id">{{ s.item_name }}</option>
-                                        </select>
-                                    </td>
-                                    <td class="font-mono text-right">{{ item.current_stock || 0 }}</td>
-                                    <td>
-                                        <div class="adj-input">
-                                            <select v-model="item.type" class="select-field" style="width: 80px;">
-                                                <option value="add">Add</option>
-                                                <option value="remove">Remove</option>
-                                            </select>
-                                            <input v-model.number="item.quantity" type="number" class="input-field" style="width: 80px;" />
-                                        </div>
-                                    </td>
-                                    <td class="font-mono text-right">{{ calcNewStock(item) }}</td>
-                                    <td><button type="button" class="btn btn-sm btn-icon" @click="removeItem(idx)">🗑️</button></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="form-group">
+                    <label class="form-label">Date *</label>
+                    <input v-model="form.adjustment_date" type="date" class="input-field" required />
                 </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="closeModal">{{ $t('common.cancel') }}</button>
-                    <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+                <div class="form-group">
+                    <label class="form-label">Godown *</label>
+                    <select v-model="form.godown_id" class="select-field" required @change="loadStockItems">
+                        <option value="">Select</option>
+                        <option v-for="g in godowns" :key="g.id" :value="g.id">{{ g.name }}</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Reason *</label>
+                    <select v-model="form.reason" class="select-field">
+                        <option value="">Select</option>
+                        <option value="damaged">Damaged</option>
+                        <option value="expired">Expired</option>
+                        <option value="theft">Theft/Loss</option>
+                        <option value="count_error">Count Error</option>
+                        <option value="found">Found</option>
+                        <option value="sample">Sample</option>
+                        <option value="other">Other</option>
+                    </select>
                 </div>
             </div>
-        </div>
+            <div class="form-row-4" style="margin-top: 6px;">
+                <div class="form-group">
+                    <label class="form-label">Supervisor</label>
+                    <input v-model="form.supervisor" type="text" class="input-field" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Checked By</label>
+                    <input v-model="form.checked_by" type="text" class="input-field" />
+                </div>
+                <div class="form-group span-2">
+                    <label class="form-label">Notes</label>
+                    <input v-model="form.notes" class="input-field" />
+                </div>
+            </div>
+
+            <div class="items-section">
+                <div class="section-header">
+                    <h4>Items</h4>
+                    <button type="button" class="btn btn-sm" @click="addItem" :disabled="!form.godown_id">+ Add</button>
+                </div>
+                <table class="sheet-grid">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">#</th>
+                            <th>Item</th>
+                            <th style="width: 80px;">Current</th>
+                            <th style="width: 120px;">Adjustment</th>
+                            <th style="width: 80px;">New</th>
+                            <th style="width: 100px;">Batch</th>
+                            <th style="width: 40px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item, idx) in form.items" :key="idx">
+                            <td class="text-center">{{ idx + 1 }}</td>
+                            <td>
+                                <select v-model="item.item_id" class="table-select" @change="selectItem(item)">
+                                    <option value="">Select</option>
+                                    <option v-for="s in stockItems" :key="s.item_id" :value="s.item_id">{{ s.item_name }}</option>
+                                </select>
+                            </td>
+                            <td class="font-mono text-right">{{ item.current_stock || 0 }}</td>
+                            <td>
+                                <div class="adj-input">
+                                    <select v-model="item.type" class="table-select" style="width: 60px;">
+                                        <option value="add">Add</option>
+                                        <option value="remove">Rem</option>
+                                    </select>
+                                    <input v-model.number="item.quantity" type="number" class="table-input" style="width: 50px;" />
+                                </div>
+                            </td>
+                            <td class="font-mono text-right">{{ calcNewStock(item) }}</td>
+                            <td>
+                                <input v-model="item.batch_number" type="text" class="table-input" />
+                            </td>
+                            <td><button type="button" class="btn btn-sm btn-icon" @click="removeItem(idx)">🗑️</button></td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" class="text-right"><strong>Net:</strong></td>
+                            <td class="font-mono text-right" :class="{ 'text-success': netAdjustment > 0, 'text-danger': netAdjustment < 0 }">
+                                {{ netAdjustment > 0 ? '+' : '' }}{{ netAdjustment }}
+                            </td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="form-group" style="margin-top: 8px;">
+                <label class="form-label">Remarks</label>
+                <textarea v-model="form.remarks" class="input-field" rows="2"></textarea>
+            </div>
+            <template #footer>
+                <button class="btn" @click="closeModal">Cancel</button>
+                <button class="btn btn-primary" @click="save">Save</button>
+            </template>
+        </AppModal>
     </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import api from '@/api'
+import AppModal from '@/components/AppModal.vue'
 
 const loading = ref(false)
+const saving = ref(false)
 const data = ref([])
 const godowns = ref([])
 const stockItems = ref([])
@@ -153,7 +180,16 @@ const meta = reactive({ total: 0 })
 
 const form = reactive({
     godown_id: '', adjustment_date: new Date().toISOString().slice(0, 10),
-    reason: '', notes: '', items: []
+    adjustment_number: '', reason: '', reference_number: '',
+    supervisor: '', checked_by: '', notes: '', remarks: '',
+    items: []
+})
+
+const netAdjustment = computed(() => {
+    return form.items.reduce((sum, item) => {
+        const adj = item.type === 'add' ? (item.quantity || 0) : -(item.quantity || 0)
+        return sum + adj
+    }, 0)
 })
 
 async function loadData() {
@@ -178,8 +214,13 @@ async function loadGodowns() {
 async function loadStockItems() {
     if (!form.godown_id) return
     try {
-        const response = await api.get(`/inventory/stock/raw_material`, { params: { godown_id: form.godown_id } })
-        if (response.data.success) stockItems.value = response.data.data
+        const rmResponse = await api.get(`/inventory/stock/raw_material`, { params: { godown_id: form.godown_id } })
+        const prodResponse = await api.get(`/inventory/stock/product`, { params: { godown_id: form.godown_id } })
+        
+        const rmItems = rmResponse.data.success ? rmResponse.data.data : []
+        const prodItems = prodResponse.data.success ? prodResponse.data.data : []
+        
+        stockItems.value = [...rmItems, ...prodItems]
     } catch (error) { console.error(error) }
 }
 
@@ -204,7 +245,12 @@ function addItem() {
 function removeItem(idx) { form.items.splice(idx, 1) }
 
 function openModal() {
-    Object.assign(form, { godown_id: '', adjustment_date: new Date().toISOString().slice(0, 10), reason: '', notes: '', items: [] })
+    Object.assign(form, {
+        godown_id: '', adjustment_date: new Date().toISOString().slice(0, 10),
+        adjustment_number: '', reason: '', reference_number: '',
+        supervisor: '', checked_by: '', notes: '', remarks: '',
+        items: []
+    })
     showModal.value = true
 }
 
@@ -224,31 +270,37 @@ async function approve(item) {
 }
 
 async function save() {
-    if (!form.godown_id || !form.reason) {
-        window.showToast?.({ type: 'error', message: 'Please fill required fields' })
-        return
-    }
-    if (form.items.length === 0) {
-        window.showToast?.({ type: 'error', message: 'Please add at least one item' })
-        return
-    }
+    saving.value = true
     try {
+        if (!form.godown_id || !form.reason) {
+            window.showToast?.({ type: 'error', message: 'Please fill required fields' })
+            return
+        }
+        if (form.items.length === 0) {
+            window.showToast?.({ type: 'error', message: 'Please add at least one item' })
+            return
+        }
+        const hasInvalidItems = form.items.some(item => !item.item_id || !item.quantity)
+        if (hasInvalidItems) {
+            window.showToast?.({ type: 'error', message: 'Please fill all item details' })
+            return
+        }
         await api.post('/inventory/adjustments', form)
         window.showToast?.({ type: 'success', message: 'Adjustment created' })
         closeModal()
         loadData()
     } catch (error) { window.showToast?.({ type: 'error', message: 'Save failed' }) }
+    finally { saving.value = false }
 }
 
 onMounted(() => { loadData(); loadGodowns() })
 </script>
 
 <style scoped>
-.items-section { margin-top: 16px; }
-.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.section-header h4 { font-size: var(--font-size-base); font-weight: 600; }
-.items-section table { margin-top: 8px; }
-.items-section table th, .items-section table td { padding: 6px; }
-.items-section table .input-field, .items-section table .select-field { width: 100%; padding: 4px 8px; font-size: var(--font-size-sm); }
-.adj-input { display: flex; gap: 4px; }
+.items-section { margin-top: 12px; }
+.section-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+.section-header h4 { font-size: var(--font-size-base); font-weight: 600; margin: 0; }
+.adj-input { display: flex; gap: 4px; align-items: center; }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
 </style>

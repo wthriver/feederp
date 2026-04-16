@@ -39,46 +39,39 @@
             </table>
         </div>
 
-        <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
-            <div class="modal" style="max-width: 450px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">{{ editing ? 'Edit' : 'Add' }} Region</h3>
-                    <button class="modal-close" @click="showModal = false">&times;</button>
+        <AppModal v-model="showModal" :title="editing ? 'Edit Region' : 'Add Region'" size="sm" :loading="saving">
+            <div class="form-row-4">
+                <div class="form-group">
+                    <label class="form-label">Code *</label>
+                    <input v-model="form.code" class="input-field" />
                 </div>
-                <div class="modal-body">
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Code *</label>
-                            <input v-model="form.code" class="input-field" placeholder="NORTH" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Name *</label>
-                            <input v-model="form.name" class="input-field" placeholder="North Region" />
-                        </div>
-                    </div>
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Timezone</label>
-                            <input v-model="form.timezone" class="input-field" placeholder="Asia/Kolkata" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Currency</label>
-                            <input v-model="form.currency" class="input-field" placeholder="INR" />
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="showModal = false">Cancel</button>
-                    <button class="btn btn-primary" @click="save" :disabled="saving">{{ saving ? 'Saving...' : 'Save' }}</button>
+                <div class="form-group span-3">
+                    <label class="form-label">Name *</label>
+                    <input v-model="form.name" class="input-field" />
                 </div>
             </div>
-        </div>
+            <div class="form-row-4" style="margin-top: 6px;">
+                <div class="form-group span-2">
+                    <label class="form-label">Timezone</label>
+                    <input v-model="form.timezone" class="input-field" />
+                </div>
+                <div class="form-group span-2">
+                    <label class="form-label">Currency</label>
+                    <input v-model="form.currency" class="input-field" />
+                </div>
+            </div>
+            <template #footer>
+                <button class="btn" @click="showModal = false">Cancel</button>
+                <button class="btn btn-primary" @click="save" :disabled="saving">{{ saving ? 'Saving...' : 'Save' }}</button>
+            </template>
+        </AppModal>
     </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import api from '@/api'
+import AppModal from '@/components/AppModal.vue'
 
 const loading = ref(false)
 const saving = ref(false)

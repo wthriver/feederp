@@ -54,21 +54,26 @@ const reportColumns = ref([])
 const currentReport = ref(null)
 
 const reports = [
-    { id: 'stock-position', name: 'Stock Position', icon: '📦', description: 'Current stock levels across godowns' },
-    { id: 'stock-valuation', name: 'Stock Valuation', icon: '💰', description: 'Stock value summary' },
-    { id: 'production-summary', name: 'Production Summary', icon: '🏭', description: 'Batch-wise production report' },
-    { id: 'sales-summary', name: 'Sales Summary', icon: '💵', description: 'Sales invoices and outstanding' },
-    { id: 'profit-analysis', name: 'Profit Analysis', icon: '📈', description: 'Revenue vs cost analysis' },
-    { id: 'raw-material-usage', name: 'Raw Material Usage', icon: '🌾', description: 'Material consumption report' }
+    { id: 'stock-position', route: '/stock-position', dataKey: 'stock', name: 'Stock Position', icon: '📦', description: 'Current stock levels across godowns' },
+    { id: 'stock-valuation', route: '/stock-valuation', dataKey: 'raw_materials', name: 'Stock Valuation', icon: '💰', description: 'Stock value summary' },
+    { id: 'production-summary', route: '/production-summary', dataKey: 'summary', name: 'Production Summary', icon: '🏭', description: 'Batch-wise production report' },
+    { id: 'sales-summary', route: '/sales-summary', dataKey: 'invoices', name: 'Sales Summary', icon: '💵', description: 'Sales invoices and outstanding' },
+    { id: 'profit-analysis', route: '/profit-analysis', dataKey: 'sales', name: 'Profit Analysis', icon: '📈', description: 'Revenue vs cost analysis' },
+    { id: 'raw-material-usage', route: '/raw-material-usage', dataKey: 'usage', name: 'Raw Material Usage', icon: '🌾', description: 'Material consumption report' }
 ]
 
 async function generateReport(report) {
     currentReport.value = report
     loading.value = true
+    reportData.value = []
+    reportColumns.value = []
     try {
-        const response = await api.get(`/reports/${report.id}`)
+        const response = await api.get(`/reports${report.route}`)
         if (response.data.success) {
-            reportData.value = response.data.data?.summary || response.data.data?.valuation || response.data.data?.invoices || response.data.data?.usage || []
+            const key = report.dataKey
+            let data = response.data.data?.[key] || []
+            if (!Array.isArray(data)) data = data?.items || []
+            reportData.value = data
             if (reportData.value.length > 0) {
                 reportColumns.value = Object.keys(reportData.value[0])
             }
@@ -83,8 +88,19 @@ function formatValue(val) {
     return val
 }
 
-function exportPDF() { window.showToast?.({ type: 'info', message: 'PDF export (coming soon)' }) }
-function exportExcel() { window.showToast?.({ type: 'info', message: 'Excel export (coming soon)' }) }
+function exportPDF() {
+    if (!currentReport.value) return
+    window.showToast?.({ type: 'info', message: 'Generating PDF...' })
+    const url = `${import.meta.env.VITE_API_URL || '/api'}/reports${currentReport.value.route}/export?format=pdf`
+    window.open(url, '_blank')
+}
+
+function exportExcel() {
+    if (!currentReport.value) return
+    window.showToast?.({ type: 'info', message: 'Generating Excel...' })
+    const url = `${import.meta.env.VITE_API_URL || '/api'}/reports${currentReport.value.route}/export?format=excel`
+    window.open(url, '_blank')
+}
 function printReport() { window.print() }
 </script>
 

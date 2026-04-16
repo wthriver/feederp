@@ -57,87 +57,177 @@
             <div class="pagination-info">Total: {{ meta.total }}</div>
         </div>
 
-        <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
-            <div class="modal" style="max-width: 600px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">New Production Batch</h3>
-                    <button class="modal-close" @click="showModal = false">&times;</button>
+        <AppModal v-model="showModal" :title="editing ? 'Edit Batch' : 'New Batch'" size="lg" :loading="saving">
+            <div class="form-row-4">
+                <div class="form-group">
+                    <label class="form-label">Batch #</label>
+                    <input type="text" class="input-field" :value="form.batch_number" disabled placeholder="Auto" />
                 </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label class="form-label">Formula *</label>
-                        <select v-model="form.formula_id" class="select-field" @change="onFormulaChange">
-                            <option value="">Select Formula</option>
-                            <option v-for="f in formulas" :key="f.id" :value="f.id">{{ f.name }}</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Product *</label>
-                        <select v-model="form.product_id" class="select-field">
-                            <option value="">Select Product</option>
-                            <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }}</option>
-                        </select>
-                    </div>
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Planned Qty (kg) *</label>
-                            <input v-model.number="form.planned_qty" type="number" class="input-field" required />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Batch Date *</label>
-                            <input v-model="form.batch_date" type="date" class="input-field" required />
-                        </div>
-                    </div>
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Godown *</label>
-                            <select v-model="form.godown_id" class="select-field">
-                                <option value="">Select Godown</option>
-                                <option v-for="g in godowns" :key="g.id" :value="g.id">{{ g.name }}</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Shift</label>
-                            <select v-model="form.shift" class="select-field">
-                                <option value="morning">Morning</option>
-                                <option value="evening">Evening</option>
-                                <option value="night">Night</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Notes</label>
-                        <textarea v-model="form.notes" class="input-field" rows="2"></textarea>
-                    </div>
+                <div class="form-group" :class="{ 'has-error': errors.formula_id }">
+                    <label class="form-label">Formula *</label>
+                    <select v-model="form.formula_id" class="select-field" @change="onFormulaChange">
+                        <option value="">Select</option>
+                        <option v-for="f in formulas" :key="f.id" :value="f.id">{{ f.name }}</option>
+                    </select>
                 </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="showModal = false">{{ $t('common.cancel') }}</button>
-                    <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+                <div class="form-group" :class="{ 'has-error': errors.product_id }">
+                    <label class="form-label">Product *</label>
+                    <select v-model="form.product_id" class="select-field">
+                        <option value="">Select</option>
+                        <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }}</option>
+                    </select>
+                </div>
+                <div class="form-group" :class="{ 'has-error': errors.batch_date }">
+                    <label class="form-label">Date *</label>
+                    <input v-model="form.batch_date" type="date" class="input-field" required />
                 </div>
             </div>
-        </div>
+            <div class="form-row-4" style="margin-top: 6px;">
+                <div class="form-group" :class="{ 'has-error': errors.planned_qty }">
+                    <label class="form-label">Qty (kg) *</label>
+                    <input v-model.number="form.planned_qty" type="number" class="input-field" required />
+                </div>
+                <div class="form-group" :class="{ 'has-error': errors.godown_id }">
+                    <label class="form-label">Godown *</label>
+                    <select v-model="form.godown_id" class="select-field">
+                        <option value="">Select</option>
+                        <option v-for="g in godowns" :key="g.id" :value="g.id">{{ g.name }}</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Machine</label>
+                    <select v-model="form.machine_id" class="select-field">
+                        <option value="">Select</option>
+                        <option v-for="m in machines" :key="m.id" :value="m.id">{{ m.name }}</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Shift</label>
+                    <select v-model="form.shift" class="select-field">
+                        <option value="morning">Morning</option>
+                        <option value="afternoon">Afternoon</option>
+                        <option value="evening">Evening</option>
+                        <option value="night">Night</option>
+                    </select>
+                </div>
+            </div>
+
+            <div v-if="selectedFormula" class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Formula</span>
+                    <span class="info-value">{{ selectedFormula.name }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Cost/1000kg</span>
+                    <span class="info-value">৳{{ formatNumber(selectedFormula.cost_per_1000kg) }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Protein</span>
+                    <span class="info-value">{{ selectedFormula.target_protein }}%</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Moisture</span>
+                    <span class="info-value">{{ selectedFormula.target_moisture }}%</span>
+                </div>
+            </div>
+
+            <div class="items-section">
+                <div class="section-header">
+                    <h4>Materials</h4>
+                </div>
+                <div v-if="form.items && form.items.length > 0">
+                    <table class="sheet-grid">
+                        <thead>
+                            <tr>
+                                <th>Material</th>
+                                <th style="width: 100px;">Required</th>
+                                <th style="width: 100px;">Consumed</th>
+                                <th style="width: 60px;">Unit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(item, idx) in form.items" :key="idx">
+                                <td>{{ item.material_name }}</td>
+                                <td class="font-mono text-right">{{ item.required_qty?.toFixed(2) }}</td>
+                                <td><input v-model.number="item.consumed_qty" type="number" class="table-input text-right" /></td>
+                                <td>{{ item.unit_name }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div v-else class="text-muted text-center" style="padding: 20px;">
+                    Select a formula to see materials
+                </div>
+            </div>
+
+            <div class="form-row-4" style="margin-top: 8px;">
+                <div class="form-group">
+                    <label class="form-label">Actual Qty</label>
+                    <input v-model.number="form.actual_qty" type="number" class="input-field" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Time (hrs)</label>
+                    <input v-model.number="form.production_time" type="number" class="input-field" step="0.5" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Operator</label>
+                    <input v-model="form.operator_name" type="text" class="input-field" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Supervisor</label>
+                    <input v-model="form.supervisor_name" type="text" class="input-field" />
+                </div>
+            </div>
+            <template #footer>
+                <button class="btn" @click="showModal = false">{{ $t('common.cancel') }}</button>
+                <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+            </template>
+        </AppModal>
     </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import api from '@/api'
+import AppModal from '@/components/AppModal.vue'
 
 const loading = ref(false)
 const data = ref([])
 const formulas = ref([])
 const products = ref([])
 const godowns = ref([])
+const machines = ref([])
 const showModal = ref(false)
+const editing = ref(null)
+const saving = ref(false)
 const filter = reactive({ status: '', from_date: '', to_date: '' })
 const meta = reactive({ total: 0 })
 
 const form = reactive({
-    formula_id: '', product_id: '', planned_qty: 0, batch_date: new Date().toISOString().slice(0, 10),
-    godown_id: '', shift: 'morning', notes: '', machine_id: ''
+    batch_number: '',
+    formula_id: '',
+    product_id: '',
+    planned_qty: 0,
+    batch_date: new Date().toISOString().slice(0, 10),
+    godown_id: '',
+    shift: 'morning',
+    notes: '',
+    machine_id: '',
+    actual_qty: 0,
+    production_time: 0,
+    operator_name: '',
+    supervisor_name: '',
+    items: []
 })
+
 const errors = reactive({})
 const touched = reactive({})
+
+const selectedFormula = computed(() => formulas.value.find(f => f.id === form.formula_id))
+
+function formatNumber(num) {
+    return num?.toLocaleString() || '0'
+}
 
 function validateField(field) {
     if (field === 'formula_id') errors.formula_id = !form.formula_id ? 'Please select a formula' : ''
@@ -191,12 +281,46 @@ async function loadGodowns() {
     } catch (error) { console.error(error) }
 }
 
-function onFormulaChange() {
-    const formula = formulas.value.find(f => f.id === form.formula_id)
-    if (formula) form.product_id = formula.product_id
+async function loadMachines() {
+    try {
+        const response = await api.get('/production/machines')
+        if (response.data.success) machines.value = response.data.data
+    } catch (error) { console.error(error) }
 }
 
-function openModal() { showModal.value = true }
+function onFormulaChange() {
+    const formula = formulas.value.find(f => f.id === form.formula_id)
+    if (formula) {
+        form.product_id = formula.product_id
+        form.items = formula.items?.map(item => ({
+            material_id: item.raw_material_id,
+            material_name: item.material_name,
+            required_qty: (item.quantity * form.planned_qty) / 1000,
+            consumed_qty: 0,
+            unit_id: item.unit_id,
+            unit_name: item.unit_name
+        })) || []
+    }
+}
+
+function openModal() {
+    editing.value = null
+    form.batch_number = ''
+    form.formula_id = ''
+    form.product_id = ''
+    form.planned_qty = 0
+    form.batch_date = new Date().toISOString().slice(0, 10)
+    form.godown_id = ''
+    form.shift = 'morning'
+    form.notes = ''
+    form.machine_id = ''
+    form.actual_qty = 0
+    form.production_time = 0
+    form.operator_name = ''
+    form.supervisor_name = ''
+    form.items = []
+    showModal.value = true
+}
 
 async function startBatch(item) {
     try {
@@ -220,13 +344,27 @@ async function save() {
     Object.keys(errors).forEach(k => touched[k] = true)
     if (!validateAll()) return
     
+    saving.value = true
     try {
         await api.post('/production/batches', form)
         window.showToast?.({ type: 'success', message: 'Batch created' })
         showModal.value = false
         loadData()
     } catch (error) { window.showToast?.({ type: 'error', message: 'Save failed: ' + (error.response?.data?.error?.message || error.message) }) }
+    finally { saving.value = false }
 }
 
-onMounted(() => { loadData(); loadFormulas(); loadProducts(); loadGodowns() })
+onMounted(() => { loadData(); loadFormulas(); loadProducts(); loadGodowns(); loadMachines() })
 </script>
+
+<style scoped>
+.info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; background: var(--bg-secondary); padding: 10px; border-radius: 4px; margin-top: 12px; }
+.info-item { display: flex; flex-direction: column; gap: 2px; }
+.info-label { font-size: var(--font-size-xs); color: var(--text-muted); font-weight: 500; }
+.info-value { font-size: var(--font-size-sm); color: var(--text-primary); font-weight: 500; }
+.items-section { margin-top: 12px; }
+.section-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+.section-header h4 { font-size: var(--font-size-base); font-weight: 600; margin: 0; }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+</style>

@@ -32,46 +32,40 @@
             </table>
         </div>
 
-        <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
-            <div class="modal" style="max-width: 500px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">{{ editing ? 'Edit' : 'Add' }} Driver</h3>
-                    <button class="modal-close" @click="showModal = false">&times;</button>
+        <AppModal v-model="showModal" :title="editing ? 'Edit Driver' : 'Add Driver'" size="sm" :loading="saving">
+            <div class="form-row-4">
+                <div class="form-group span-2">
+                    <label class="form-label">{{ $t('common.name') }} *</label>
+                    <input v-model="form.name" class="input-field" required />
                 </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label class="form-label">{{ $t('common.name') }} *</label>
-                        <input v-model="form.name" class="input-field" required />
-                    </div>
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Phone</label>
-                            <input v-model="form.phone" class="input-field" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">License Number</label>
-                            <input v-model="form.license_number" class="input-field" />
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Address</label>
-                        <textarea v-model="form.address" class="input-field" rows="2"></textarea>
-                    </div>
+                <div class="form-group">
+                    <label class="form-label">Phone</label>
+                    <input v-model="form.phone" class="input-field" />
                 </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="showModal = false">{{ $t('common.cancel') }}</button>
-                    <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+                <div class="form-group">
+                    <label class="form-label">License #</label>
+                    <input v-model="form.license_number" class="input-field" />
                 </div>
             </div>
-        </div>
+            <div class="form-group" style="margin-top: 6px;">
+                <label class="form-label">Address</label>
+                <textarea v-model="form.address" class="input-field" rows="2"></textarea>
+            </div>
+            <template #footer>
+                <button class="btn" @click="showModal = false">Cancel</button>
+                <button class="btn btn-primary" @click="save">Save</button>
+            </template>
+        </AppModal>
     </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import api from '@/api'
+import AppModal from '@/components/AppModal.vue'
 
 const loading = ref(false)
+const saving = ref(false)
 const data = ref([])
 const showModal = ref(false)
 const editing = ref(null)
@@ -100,12 +94,15 @@ function editItem(item) {
 }
 
 async function save() {
+    saving.value = true
     try {
-        await api.post('/transport/drivers', form)
+        if (editing.value) await api.put(`/transport/drivers/${editing.value.id}`, form)
+        else await api.post('/transport/drivers', form)
         window.showToast?.({ type: 'success', message: 'Saved successfully' })
         showModal.value = false
         loadData()
     } catch (error) { window.showToast?.({ type: 'error', message: 'Save failed' }) }
+    finally { saving.value = false }
 }
 
 onMounted(loadData)

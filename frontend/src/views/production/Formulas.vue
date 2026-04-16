@@ -47,59 +47,57 @@
             </table>
         </div>
 
-        <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
-            <div class="modal" style="max-width: 800px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">{{ editing ? 'Edit' : 'New' }} Formula</h3>
-                    <button class="modal-close" @click="showModal = false">&times;</button>
+        <AppModal v-model="showModal" :title="editing ? 'Edit Formula' : 'New Formula'" size="md" :loading="saving">
+            <div class="form-row-4">
+                <div class="form-group">
+                    <label class="form-label">Code *</label>
+                    <input v-model="form.code" class="input-field" required />
                 </div>
-                <div class="modal-body">
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Code *</label>
-                            <input v-model="form.code" class="input-field" required />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Name *</label>
-                            <input v-model="form.name" class="input-field" required />
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Product *</label>
-                        <select v-model="form.product_id" class="select-field">
-                            <option value="">Select Product</option>
-                            <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }}</option>
-                        </select>
-                    </div>
-                    <div class="form-row form-row-3">
-                        <div class="form-group">
-                            <label class="form-label">Target Protein %</label>
-                            <input v-model.number="form.target_protein" type="number" step="0.1" class="input-field" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Target Moisture %</label>
-                            <input v-model.number="form.target_moisture" type="number" step="0.1" class="input-field" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Target Fiber %</label>
-                            <input v-model.number="form.target_fiber" type="number" step="0.1" class="input-field" />
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="showModal = false">{{ $t('common.cancel') }}</button>
-                    <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+                <div class="form-group span-3">
+                    <label class="form-label">Name *</label>
+                    <input v-model="form.name" class="input-field" required />
                 </div>
             </div>
-        </div>
+            <div class="form-group" style="margin-top: 6px;">
+                <label class="form-label">Product *</label>
+                <select v-model="form.product_id" class="select-field">
+                    <option value="">Select Product</option>
+                    <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }}</option>
+                </select>
+            </div>
+            <div class="form-row-4" style="margin-top: 6px;">
+                <div class="form-group">
+                    <label class="form-label">Protein %</label>
+                    <input v-model.number="form.target_protein" type="number" step="0.1" class="input-field" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Moisture %</label>
+                    <input v-model.number="form.target_moisture" type="number" step="0.1" class="input-field" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Fiber %</label>
+                    <input v-model.number="form.target_fiber" type="number" step="0.1" class="input-field" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Fat %</label>
+                    <input v-model.number="form.target_fat" type="number" step="0.1" class="input-field" />
+                </div>
+            </div>
+            <template #footer>
+                <button class="btn" @click="showModal = false">{{ $t('common.cancel') }}</button>
+                <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+            </template>
+        </AppModal>
     </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import api from '@/api'
+import AppModal from '@/components/AppModal.vue'
 
 const loading = ref(false)
+const saving = ref(false)
 const data = ref([])
 const products = ref([])
 const showModal = ref(false)
@@ -154,12 +152,13 @@ async function optimize(item) {
         const response = await api.get(`/production/formulas/${item.id}/optimize`)
         if (response.data.success) {
             console.log('Optimization:', response.data.data)
-            window.showToast?.({ type: 'info', message: `Cost per 1000kg: ₹${response.data.data.total_cost_per_1000kg?.toFixed(2)}` })
+            window.showToast?.({ type: 'info', message: `Cost per 1000kg: ৳${response.data.data.total_cost_per_1000kg?.toFixed(2)}` })
         }
     } catch (error) { window.showToast?.({ type: 'error', message: 'Optimization failed' }) }
 }
 
 async function save() {
+    saving.value = true
     try {
         if (editing.value) await api.put(`/production/formulas/${editing.value.id}`, form)
         else await api.post('/production/formulas', form)
@@ -167,6 +166,7 @@ async function save() {
         showModal.value = false
         loadData()
     } catch (error) { window.showToast?.({ type: 'error', message: 'Save failed' }) }
+    finally { saving.value = false }
 }
 
 onMounted(() => { loadData(); loadProducts() })

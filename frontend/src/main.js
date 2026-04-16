@@ -12,3 +12,13 @@ app.use(router)
 app.use(i18n)
 
 app.mount('#app')
+
+document.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'touch') {
+        document.body.classList.add('touch-device')
+    }
+})
+
+document.addEventListener('pointerup', () => {
+    document.body.classList.remove('touch-device')
+})

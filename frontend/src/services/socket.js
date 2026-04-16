@@ -9,7 +9,7 @@ export function initSocket() {
     
     if (socket?.connected) return socket
     
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3006'
     socket = io(apiUrl, {
         transports: ['websocket', 'polling'],
         reconnection: true,

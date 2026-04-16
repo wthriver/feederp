@@ -37,38 +37,31 @@
             </table>
         </div>
 
-        <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
-            <div class="modal" style="max-width: 500px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">{{ editing ? 'Edit' : 'Add' }} Route</h3>
-                    <button class="modal-close" @click="showModal = false">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label class="form-label">Name *</label>
-                        <input v-model="form.name" class="input-field" placeholder="Route name" />
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Name (Bengali)</label>
-                        <input v-model="form.name_bn" class="input-field" placeholder="রুট নাম" />
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Description</label>
-                        <textarea v-model="form.description" class="input-field" rows="2"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="showModal = false">{{ $t('common.cancel') }}</button>
-                    <button class="btn btn-primary" @click="save" :disabled="saving">{{ saving ? 'Saving...' : $t('common.save') }}</button>
-                </div>
+        <AppModal v-model="showModal" :title="editing ? 'Edit Route' : 'Add Route'" size="md" :loading="saving">
+            <div class="form-group">
+                <label class="form-label">Name *</label>
+                <input v-model="form.name" class="input-field" placeholder="Route name" />
             </div>
-        </div>
+            <div class="form-group">
+                <label class="form-label">Name (Bengali)</label>
+                <input v-model="form.name_bn" class="input-field" placeholder="রুট নাম" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea v-model="form.description" class="input-field" rows="2"></textarea>
+            </div>
+            <template #footer>
+                <button class="btn" @click="showModal = false">{{ $t('common.cancel') }}</button>
+                <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+            </template>
+        </AppModal>
     </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import api from '@/api'
+import AppModal from '@/components/AppModal.vue'
 
 const loading = ref(false)
 const saving = ref(false)

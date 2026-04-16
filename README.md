@@ -7,18 +7,17 @@ Enterprise Resource Planning system for Cattle/Poultry/Fish Feed Factory Managem
 ### Development Mode
 
 ```bash
+# Install all dependencies
+npm run install:all
+
 # Start Backend
-cd server
-npm install
-npm start
+npm run server
 
 # Start Frontend (new terminal)
-cd frontend
-npm install
-npm run dev
+npm run client
 ```
 
-- Backend: http://localhost:3000
+- Backend: http://localhost:3006
 - Frontend: http://localhost:5173
 - Default Login: admin / admin123
 
@@ -37,19 +36,17 @@ docker-compose logs -f
 
 Access at http://localhost:8080
 
-### Manual Production Deployment
+### Testing
 
 ```bash
-# Backend
-cd server
-npm install --production
-npm start
+# Run all tests
+npm test
 
-# Frontend
-cd frontend
-npm install
-npm run build
-# Serve dist/ with nginx
+# Run with coverage
+npm test -- --coverage
+
+# Run specific test file
+npm test -- tests/security.test.js
 ```
 
 ## Features
@@ -73,43 +70,54 @@ npm run build
 - **Real-time**: Socket.io
 - **Export**: PDFKit, ExcelJS
 
-## API Documentation
+## Changelog
 
-Base URL: `http://localhost:3000/api`
+### Phase 1: Security & Performance Foundations
+- ✅ MFA (TOTP) authentication with backup codes
+- ✅ Database-backed session management
+- ✅ Tenant isolation fixes in sales/production
+- ✅ N+1 query optimizations in inventory/production
+- ✅ Secure rate limit logging (no sensitive data)
+- ✅ Enhanced input sanitization with XSS detection
 
-### Authentication
-- POST `/auth/login` - User login
-- POST `/auth/logout` - User logout
-- GET `/auth/me` - Get current user
+### Phase 2: Frontend Component Standardization
+- ✅ 38 views refactored to use AppModal component
+- ✅ Consistent modal structure across all pages
+- ✅ Loading state indicators on all forms
+- ✅ Standardized form validation patterns
 
-### Master Data
-- GET `/master/factories` - List factories
-- GET `/master/godowns` - List godowns
-- GET `/master/raw-materials` - List raw materials
-- GET `/master/products` - List products
+### Phase 3: Database Optimization
+- ✅ 27 new database indexes added
+- ✅ Optimized JOINs for sales orders, invoices, batches
+- ✅ Improved query performance for reports
 
-### Purchase
-- GET `/purchase/purchase-orders` - List POs
-- POST `/purchase/purchase-orders` - Create PO
-- POST `/purchase/purchase-orders/:id/approve` - Approve PO
-- GET `/purchase/goods-inward` - List GRNs
-- POST `/purchase/goods-inward` - Create GRN
+### Phase 4: Enterprise Core Features
+- ✅ Enhanced bulk export (CSV, Excel) for 8+ entities
+- ✅ CSV import templates with validation
+- ✅ Bulk create/update/delete operations
+- ✅ Sales and inventory export endpoints
 
-### Production
-- GET `/production/formulas` - List formulas
-- POST `/production/formulas` - Create formula
-- GET `/production/batches` - List batches
-- POST `/production/batches` - Create batch
-- POST `/production/formulas/:id/optimize` - Optimize formula
+### Phase 5: UX & Accessibility
+- ✅ Keyboard navigation composables
+- ✅ Focus trap utilities for modals
+- ✅ Screen reader announcement support
+- ✅ Error boundary component
+- ✅ Enhanced skeleton loaders (table, card, list)
+- ✅ Improved empty state accessibility
 
-### Reports
-- GET `/reports/stock-position` - Stock position
-- GET `/reports/sales-summary` - Sales summary
-- GET `/reports/production-summary` - Production summary
+### Phase 6: Missing Enterprise Features
+- ✅ Multi-step workflow approval engine
+- ✅ Configurable validation rules
+- ✅ Audit log export to CSV/Excel
+- ✅ Dashboard widget customization
+- ✅ User notification preferences
 
-### Export
-- GET `/reports/stock-position/export?format=pdf` - Export PDF
-- GET `/reports/stock-position/export?format=excel` - Export Excel
+### Phase 7: Testing & Documentation
+- ✅ Comprehensive Jest configuration
+- ✅ Security tests (rate limiting, XSS, SQL injection)
+- ✅ Workflow API tests
+- ✅ Validation rules tests
+- ✅ Full API documentation
 
 ## Configuration
 
@@ -118,14 +126,14 @@ Environment variables:
 | Variable | Description | Default |
 |----------|-------------|---------|
 | NODE_ENV | Environment | development |
-| PORT | Server port | 3000 |
+| PORT | Server port | 3006 |
 | DB_TYPE | Database type | sqlite |
 | DB_HOST | Database host | localhost |
 | DB_PORT | Database port | 5432 |
 | DB_NAME | Database name | feedmill_erp |
 | JWT_SECRET | JWT secret | - |
-| JWT_EXPIRY | Token expiry | 8h |
+| JWT_REFRESH_SECRET | Refresh token secret | - |
 
 ## License
 
-Proprietary - All rights reserved
+MIT License - See LICENSE file for details

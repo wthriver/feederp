@@ -5,11 +5,53 @@ const { query, queryOne, run, logActivity, getNextSequence, formatSequence } = r
 const { authenticate } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/permissions');
 
-// Stock Summary
+function getStockBalance(itemType, itemId, godownId, batchNumber = null) {
+    let sql = `
+        SELECT balance_qty, balance_amount FROM stock_ledger
+        WHERE item_type = ? AND item_id = ? AND godown_id = ?
+    `;
+    const params = [itemType, itemId, godownId];
+    
+    if (batchNumber) {
+        sql += ' AND batch_number = ?';
+        params.push(batchNumber);
+    }
+    
+    sql += ' ORDER BY created_at DESC LIMIT 1';
+    
+    return queryOne(sql, params);
+}
+
+function checkAndReserveStock(itemType, itemId, godownId, quantity, batchNumber = null) {
+    const balance = getStockBalance(itemType, itemId, godownId, batchNumber);
+    
+    if (!balance || balance.balance_qty <= 0) {
+        return { available: false, message: 'No stock available' };
+    }
+    
+    if (balance.balance_qty < quantity) {
+        return { 
+            available: false, 
+            message: `Insufficient stock. Available: ${balance.balance_qty}, Required: ${quantity}` 
+        };
+    }
+    
+    return { available: true, balance };
+}
+
+function safeCalculateRate(balance) {
+    if (!balance || !balance.balance_qty || balance.balance_qty === 0 || !balance.balance_amount) {
+        return 0;
+    }
+    return balance.balance_amount / balance.balance_qty;
+}
+
 router.get('/stock', authenticate, async (req, res) => {
     try {
         const { type, godown_id, search, page = 1, limit = 100 } = req.query;
-        const offset = (page - 1) * limit;
+        
+        const pageNum = Math.max(1, parseInt(page) || 1);
+        const limitNum = Math.min(1000, Math.max(1, parseInt(limit) || 100));
 
         let whereClause = 'WHERE sl.tenant_id = ? AND g.factory_id = ?';
         const params = [req.tenantId, req.factoryId];
@@ -29,10 +71,25 @@ router.get('/stock', authenticate, async (req, res) => {
             params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
         }
 
+        const countSql = `
+            SELECT COUNT(DISTINCT sl.item_id || sl.item_type || sl.godown_id || COALESCE(sl.batch_number, '')) as total
+            FROM stock_ledger sl
+            LEFT JOIN godowns g ON sl.godown_id = g.id
+            LEFT JOIN raw_materials rm ON sl.item_type = 'raw_material' AND sl.item_id = rm.id
+            LEFT JOIN products p ON sl.item_type = 'product' AND sl.item_id = p.id
+            ${whereClause}
+        `;
+        
+        const { total } = queryOne(countSql, params);
+        
+        const offset = (pageNum - 1) * limitNum;
+
         const sql = `
             SELECT sl.item_id, sl.item_type, sl.godown_id, sl.batch_number,
                    SUM(sl.quantity) as total_qty,
-                   SUM(sl.quantity * sl.rate) / NULLIF(SUM(sl.quantity), 0) as avg_rate,
+                   CASE WHEN SUM(sl.quantity) != 0 
+                        THEN SUM(sl.quantity * sl.rate) / SUM(sl.quantity) 
+                        ELSE 0 END as avg_rate,
                    g.name as godown_name, g.code as godown_code,
                    CASE WHEN sl.item_type = 'raw_material' THEN rm.name ELSE p.name END as item_name,
                    CASE WHEN sl.item_type = 'raw_material' THEN rm.code ELSE p.code END as item_code
@@ -43,17 +100,16 @@ router.get('/stock', authenticate, async (req, res) => {
             ${whereClause}
             GROUP BY sl.item_id, sl.item_type, sl.godown_id, sl.batch_number
             ORDER BY item_name
+            LIMIT ? OFFSET ?
         `;
 
-        const stock = query(sql, params);
-        
-        const total = stock.length;
-        const paginatedStock = stock.slice(offset, offset + parseInt(limit));
+        const paramsWithPagination = [...params, limitNum, offset];
+        const stock = query(sql, paramsWithPagination);
 
         res.json({
             success: true,
-            data: paginatedStock,
-            meta: { page: parseInt(page), limit: parseInt(limit), total, totalPages: Math.ceil(total / limit) }
+            data: stock,
+            meta: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) }
         });
     } catch (error) {
         console.error('Stock error:', error);
@@ -61,7 +117,6 @@ router.get('/stock', authenticate, async (req, res) => {
     }
 });
 
-// Stock by Item
 router.get('/stock/:type/:id', authenticate, async (req, res) => {
     try {
         const { type, id } = req.params;
@@ -90,8 +145,8 @@ router.get('/stock/:type/:id', authenticate, async (req, res) => {
         `, [req.tenantId, type, id]);
 
         const itemInfo = type === 'raw_material'
-            ? queryOne('SELECT * FROM raw_materials WHERE id = ?', [id])
-            : queryOne('SELECT * FROM products WHERE id = ?', [id]);
+            ? queryOne('SELECT * FROM raw_materials WHERE id = ? AND tenant_id = ?', [id, req.tenantId])
+            : queryOne('SELECT * FROM products WHERE id = ? AND tenant_id = ?', [id, req.tenantId]);
 
         res.json({
             success: true,
@@ -106,18 +161,23 @@ router.get('/stock/:type/:id', authenticate, async (req, res) => {
     }
 });
 
-// Stock Alerts
 router.get('/stock/alerts', authenticate, async (req, res) => {
     try {
         const alerts = [];
 
         const rawMaterials = query(`
-            SELECT rm.*, u.name as unit_name,
-                   COALESCE((SELECT SUM(quantity) FROM stock_ledger WHERE item_type = 'raw_material' AND item_id = rm.id), 0) as current_stock
+            SELECT rm.id, rm.code, rm.name, rm.min_stock, rm.max_stock, u.name as unit_name,
+                   COALESCE(sl.total_qty, 0) as current_stock
             FROM raw_materials rm
             LEFT JOIN units u ON rm.unit_id = u.id
+            LEFT JOIN (
+                SELECT item_id, SUM(quantity) as total_qty
+                FROM stock_ledger
+                WHERE tenant_id = ? AND item_type = 'raw_material'
+                GROUP BY item_id
+            ) sl ON rm.id = sl.item_id
             WHERE rm.tenant_id = ? AND rm.is_active = 1 AND rm.min_stock > 0
-        `, [req.tenantId]);
+        `, [req.tenantId, req.tenantId]);
 
         rawMaterials.forEach(rm => {
             if (rm.current_stock <= rm.min_stock) {
@@ -136,12 +196,18 @@ router.get('/stock/alerts', authenticate, async (req, res) => {
         });
 
         const products = query(`
-            SELECT p.*, u.name as unit_name,
-                   COALESCE((SELECT SUM(quantity) FROM stock_ledger WHERE item_type = 'product' AND item_id = p.id), 0) as current_stock
+            SELECT p.id, p.code, p.name, p.min_stock, p.max_stock, u.name as unit_name,
+                   COALESCE(sl.total_qty, 0) as current_stock
             FROM products p
             LEFT JOIN units u ON p.unit_id = u.id
+            LEFT JOIN (
+                SELECT item_id, SUM(quantity) as total_qty
+                FROM stock_ledger
+                WHERE tenant_id = ? AND item_type = 'product'
+                GROUP BY item_id
+            ) sl ON p.id = sl.item_id
             WHERE p.tenant_id = ? AND p.is_active = 1 AND p.min_stock > 0
-        `, [req.tenantId]);
+        `, [req.tenantId, req.tenantId]);
 
         products.forEach(p => {
             if (p.current_stock <= p.min_stock) {
@@ -159,15 +225,18 @@ router.get('/stock/alerts', authenticate, async (req, res) => {
             }
         });
 
+        const thirtyDaysFromNow = new Date();
+        thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+        
         const expiringItems = query(`
             SELECT sl.*, rm.name, rm.code, g.name as godown_name
             FROM stock_ledger sl
             LEFT JOIN raw_materials rm ON sl.item_type = 'raw_material' AND sl.item_id = rm.id
             LEFT JOIN godowns g ON sl.godown_id = g.id
             WHERE sl.tenant_id = ? AND sl.expiry_date IS NOT NULL
-            AND sl.expiry_date <= date('now', '+30 days')
+            AND date(sl.expiry_date) <= date(?)
             AND sl.quantity > 0
-        `, [req.tenantId]);
+        `, [req.tenantId, thirtyDaysFromNow.toISOString().split('T')[0]]);
 
         expiringItems.forEach(item => {
             alerts.push({
@@ -189,7 +258,6 @@ router.get('/stock/alerts', authenticate, async (req, res) => {
     }
 });
 
-// Stock Valuation
 router.get('/stock/valuation', authenticate, async (req, res) => {
     try {
         const { godown_id, as_on_date } = req.query;
@@ -201,7 +269,9 @@ router.get('/stock/valuation', authenticate, async (req, res) => {
                    CASE WHEN sl.item_type = 'raw_material' THEN rm.code ELSE p.code END as item_code,
                    g.name as godown_name, g.code as godown_code,
                    SUM(sl.quantity) as total_qty,
-                   SUM(sl.quantity * sl.rate) / NULLIF(SUM(sl.quantity), 0) as avg_rate,
+                   CASE WHEN SUM(sl.quantity) != 0 
+                        THEN SUM(sl.quantity * sl.rate) / SUM(sl.quantity) 
+                        ELSE 0 END as avg_rate,
                    SUM(sl.quantity * sl.rate) as total_value
             FROM stock_ledger sl
             LEFT JOIN godowns g ON sl.godown_id = g.id
@@ -221,12 +291,14 @@ router.get('/stock/valuation', authenticate, async (req, res) => {
 
         const valuation = query(sql, params);
 
-        const totals = queryOne(`
+        const totalsSql = `
             SELECT SUM(sl.quantity) as total_qty, SUM(sl.quantity * sl.rate) as total_value
             FROM stock_ledger sl
             LEFT JOIN godowns g ON sl.godown_id = g.id
             WHERE sl.tenant_id = ? ${godown_id ? 'AND sl.godown_id = ?' : ''}
-        `, godown_id ? [req.tenantId, godown_id] : [req.tenantId]);
+        `;
+        
+        const totals = queryOne(totalsSql, godown_id ? [req.tenantId, godown_id] : [req.tenantId]);
 
         res.json({
             success: true,
@@ -245,7 +317,6 @@ router.get('/stock/valuation', authenticate, async (req, res) => {
     }
 });
 
-// Stock Transfer
 router.get('/transfers', authenticate, async (req, res) => {
     try {
         const { status, from_date, to_date, page = 1, limit = 50 } = req.query;
@@ -306,6 +377,10 @@ router.post('/transfers', authenticate, requirePermission('inventory', 'add'), a
             return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'At least one item is required' } });
         }
 
+        if (from_godown_id === to_godown_id) {
+            return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Source and destination godowns must be different' } });
+        }
+
         const transferNumber = formatSequence('TRF', getNextSequence('TRF', req.tenantId));
         const transferId = uuidv4();
 
@@ -330,49 +405,56 @@ router.post('/transfers', authenticate, requirePermission('inventory', 'add'), a
 
 router.post('/transfers/:id/approve', authenticate, requirePermission('inventory', 'approve'), async (req, res) => {
     try {
-        const transfer = queryOne('SELECT * FROM transfers WHERE id = ?', [req.params.id]);
+        const transfer = queryOne('SELECT * FROM transfers WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
         const items = query('SELECT * FROM transfer_items WHERE transfer_id = ?', [req.params.id]);
 
         if (!transfer) {
             return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Transfer not found' } });
         }
 
-        items.forEach(item => {
-            const fromBalance = queryOne(`
-                SELECT balance_qty, balance_amount FROM stock_ledger
-                WHERE item_type = ? AND item_id = ? AND godown_id = ? AND batch_number = ?
-                ORDER BY created_at DESC LIMIT 1
-            `, [item.item_type, item.item_id, transfer.from_godown_id, item.batch_number]);
+        if (transfer.status !== 'pending') {
+            return res.status(400).json({ success: false, error: { code: 'INVALID_STATUS', message: 'Transfer is not in pending status' } });
+        }
 
-            if (fromBalance && fromBalance.balance_qty >= item.quantity) {
-                const ledgerId = uuidv4();
-                const newFromQty = fromBalance.balance_qty - item.quantity;
-                const newFromAmt = fromBalance.balance_amount - (item.quantity * (fromBalance.balance_amount / fromBalance.balance_qty));
+        for (const item of items) {
+            const fromBalance = getStockBalance(item.item_type, item.item_id, transfer.from_godown_id, item.batch_number);
 
-                run(`INSERT INTO stock_ledger (id, tenant_id, item_type, item_id, batch_number, godown_id, transaction_type, reference_type, reference_id, quantity, rate, amount, balance_qty, balance_amount, barcode, created_by)
-                     VALUES (?, ?, ?, ?, ?, ?, 'transfer_out', 'transfer', ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [ledgerId, req.tenantId, item.item_type, item.item_id, item.batch_number, transfer.from_godown_id, transfer.id,
-                     -item.quantity, 0, 0, newFromQty, newFromAmt, item.barcode, req.user.id]);
-
-                const toRate = fromBalance.balance_amount / fromBalance.balance_qty;
-                const toBalance = queryOne(`
-                    SELECT balance_qty, balance_amount FROM stock_ledger
-                    WHERE item_type = ? AND item_id = ? AND godown_id = ?
-                    ORDER BY created_at DESC LIMIT 1
-                `, [item.item_type, item.item_id, transfer.to_godown_id]);
-
-                const newToQty = (toBalance?.balance_qty || 0) + item.quantity;
-                const newToAmt = (toBalance?.balance_amount || 0) + (item.quantity * toRate);
-
-                const ledgerId2 = uuidv4();
-                run(`INSERT INTO stock_ledger (id, tenant_id, item_type, item_id, batch_number, godown_id, transaction_type, reference_type, reference_id, quantity, rate, amount, balance_qty, balance_amount, barcode, created_by)
-                     VALUES (?, ?, ?, ?, ?, ?, 'transfer_in', 'transfer', ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [ledgerId2, req.tenantId, item.item_type, item.item_id, item.batch_number, transfer.to_godown_id, transfer.id,
-                     item.quantity, toRate, item.quantity * toRate, newToQty, newToAmt, item.barcode, req.user.id]);
+            if (!fromBalance || fromBalance.balance_qty <= 0) {
+                return res.status(400).json({ 
+                    success: false, 
+                    error: { code: 'INSUFFICIENT_STOCK', message: `Insufficient stock for item ${item.item_id}` } 
+                });
             }
-        });
 
-        run('UPDATE transfers SET status = ?, approved_by = ? WHERE id = ?', ['completed', req.user.id, req.params.id]);
+            if (fromBalance.balance_qty < item.quantity) {
+                return res.status(400).json({ 
+                    success: false, 
+                    error: { code: 'INSUFFICIENT_STOCK', message: `Insufficient stock. Available: ${fromBalance.balance_qty}, Required: ${item.quantity}` } 
+                });
+            }
+
+            const ledgerId = uuidv4();
+            const newFromQty = fromBalance.balance_qty - item.quantity;
+            const rate = safeCalculateRate(fromBalance);
+            const newFromAmt = newFromQty * rate;
+
+            run(`INSERT INTO stock_ledger (id, tenant_id, item_type, item_id, batch_number, godown_id, transaction_type, reference_type, reference_id, quantity, rate, amount, balance_qty, balance_amount, barcode, created_by)
+                 VALUES (?, ?, ?, ?, ?, ?, 'transfer_out', 'transfer', ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [ledgerId, req.tenantId, item.item_type, item.item_id, item.batch_number, transfer.from_godown_id, transfer.id,
+                 -item.quantity, rate, -item.quantity * rate, newFromQty, newFromAmt, item.barcode, req.user.id]);
+
+            const toBalance = getStockBalance(item.item_type, item.item_id, transfer.to_godown_id);
+            const newToQty = (toBalance?.balance_qty || 0) + item.quantity;
+            const newToAmt = (toBalance?.balance_amount || 0) + (item.quantity * rate);
+
+            const ledgerId2 = uuidv4();
+            run(`INSERT INTO stock_ledger (id, tenant_id, item_type, item_id, batch_number, godown_id, transaction_type, reference_type, reference_id, quantity, rate, amount, balance_qty, balance_amount, barcode, created_by)
+                 VALUES (?, ?, ?, ?, ?, ?, 'transfer_in', 'transfer', ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [ledgerId2, req.tenantId, item.item_type, item.item_id, item.batch_number, transfer.to_godown_id, transfer.id,
+                 item.quantity, rate, item.quantity * rate, newToQty, newToAmt, item.barcode, req.user.id]);
+        }
+
+        run('UPDATE transfers SET status = ?, approved_by = ? WHERE id = ? AND tenant_id = ?', ['completed', req.user.id, req.params.id, req.tenantId]);
 
         logActivity(req.tenantId, req.user.id, 'inventory', 'transfer_completed', transfer.id, null, { status: 'completed' }, req);
 
@@ -383,7 +465,6 @@ router.post('/transfers/:id/approve', authenticate, requirePermission('inventory
     }
 });
 
-// Stock Adjustments
 router.get('/adjustments', authenticate, async (req, res) => {
     try {
         const { status, godown_id, from_date, to_date, page = 1, limit = 50 } = req.query;
@@ -422,6 +503,11 @@ router.post('/adjustments', authenticate, requirePermission('inventory', 'add'),
             return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'At least one item is required' } });
         }
 
+        const validReasons = ['damaged', 'expired', 'theft', 'count', 'other'];
+        if (!validReasons.includes(reason)) {
+            return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid adjustment reason' } });
+        }
+
         const adjNumber = formatSequence('ADJ', getNextSequence('ADJ', req.tenantId));
         const adjId = uuidv4();
 
@@ -446,27 +532,32 @@ router.post('/adjustments', authenticate, requirePermission('inventory', 'add'),
 
 router.post('/adjustments/:id/approve', authenticate, requirePermission('inventory', 'approve'), async (req, res) => {
     try {
-        const adjustment = queryOne('SELECT * FROM stock_adjustments WHERE id = ?', [req.params.id]);
+        const adjustment = queryOne('SELECT * FROM stock_adjustments WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
         const items = query('SELECT * FROM adjustment_items WHERE adjustment_id = ?', [req.params.id]);
 
         if (!adjustment) {
             return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Adjustment not found' } });
         }
 
-        items.forEach(item => {
-            if (item.difference !== 0) {
-                const prevBalance = queryOne(`
-                    SELECT balance_qty, balance_amount FROM stock_ledger
-                    WHERE item_type = ? AND item_id = ? AND godown_id = ?
-                    ORDER BY created_at DESC LIMIT 1
-                `, [item.item_type, item.item_id, adjustment.godown_id]);
+        if (adjustment.status !== 'pending') {
+            return res.status(400).json({ success: false, error: { code: 'INVALID_STATUS', message: 'Only pending adjustments can be approved' } });
+        }
 
-                const avgRate = (prevBalance?.balance_qty && prevBalance?.balance_qty > 0) 
-                    ? prevBalance.balance_amount / prevBalance.balance_qty 
-                    : 0;
+        for (const item of items) {
+            if (item.difference !== 0) {
+                const prevBalance = getStockBalance(item.item_type, item.item_id, adjustment.godown_id);
+                
                 const newBalanceQty = (prevBalance?.balance_qty || 0) + item.difference;
-                const newBalanceAmt = (prevBalance?.balance_amount || 0) + (item.difference * avgRate);
-                const rate = avgRate;
+                
+                if (newBalanceQty < 0) {
+                    return res.status(400).json({ 
+                        success: false, 
+                        error: { code: 'NEGATIVE_STOCK', message: `Adjustment would result in negative stock for item ${item.item_id}` } 
+                    });
+                }
+
+                const rate = safeCalculateRate(prevBalance);
+                const newBalanceAmt = newBalanceQty * rate;
 
                 const ledgerId = uuidv4();
                 run(`INSERT INTO stock_ledger (id, tenant_id, item_type, item_id, batch_number, godown_id, transaction_type, reference_type, reference_id, quantity, rate, amount, balance_qty, balance_amount, created_by)
@@ -474,14 +565,15 @@ router.post('/adjustments/:id/approve', authenticate, requirePermission('invento
                     [ledgerId, req.tenantId, item.item_type, item.item_id, item.batch_number, adjustment.godown_id, req.params.id,
                      item.difference, rate, item.difference * rate, newBalanceQty, newBalanceAmt, req.user.id]);
             }
-        });
+        }
 
-        run('UPDATE stock_adjustments SET status = ?, approved_by = ? WHERE id = ?', ['completed', req.user.id, req.params.id]);
+        run('UPDATE stock_adjustments SET status = ?, approved_by = ? WHERE id = ? AND tenant_id = ?', ['completed', req.user.id, req.params.id, req.tenantId]);
 
         logActivity(req.tenantId, req.user.id, 'inventory', 'adjustment_completed', req.params.id, null, { status: 'completed' }, req);
 
         res.json({ success: true, message: 'Adjustment approved and posted to stock' });
     } catch (error) {
+        console.error('Adjustment approve error:', error);
         res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
     }
 });

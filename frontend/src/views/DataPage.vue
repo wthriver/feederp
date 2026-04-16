@@ -44,7 +44,7 @@
                                 {{ row[col.key] }}
                             </span>
                             <span v-else-if="col.type === 'currency'" class="font-mono">
-                                ₹{{ formatNumber(row[col.key]) }}
+                                ৳{{ formatNumber(row[col.key]) }}
                             </span>
                             <span v-else>{{ row[col.key] }}</span>
                         </td>
@@ -78,27 +78,20 @@
             </div>
         </div>
 
-        <div v-if="showAddModal" class="modal-overlay" @click.self="showAddModal = false">
-            <div class="modal">
-                <div class="modal-header">
-                    <h3 class="modal-title">{{ editingRow ? 'Edit' : 'Add' }} {{ pageTitle }}</h3>
-                    <button class="modal-close" @click="showAddModal = false">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <slot name="form"></slot>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="showAddModal = false">{{ $t('common.cancel') }}</button>
-                    <button class="btn btn-primary" @click="saveRow">{{ $t('common.save') }}</button>
-                </div>
-            </div>
-        </div>
+        <AppModal v-model="showAddModal" :title="(editingRow ? 'Edit' : 'Add') + ' ' + pageTitle" size="lg" :loading="saving">
+            <slot name="form"></slot>
+            <template #footer>
+                <button class="btn" @click="showAddModal = false">{{ $t('common.cancel') }}</button>
+                <button class="btn btn-primary" @click="saveRow">{{ $t('common.save') }}</button>
+            </template>
+        </AppModal>
     </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '@/api'
+import AppModal from '@/components/AppModal.vue'
 
 const props = defineProps({
     pageTitle: String,
@@ -112,6 +105,7 @@ const searchQuery = ref('')
 const filters = ref({ status: '' })
 const showAddModal = ref(false)
 const editingRow = ref(null)
+const saving = ref(false)
 const meta = ref({ current_page: 1, total: 0, from: 0, to: 0 })
 
 const visiblePages = computed(() => {
@@ -177,6 +171,7 @@ async function deleteRow(row) {
 }
 
 function saveRow() {
+    saving.value = true
     // Override in child component
 }
 
@@ -196,18 +191,23 @@ onMounted(() => {
 
 <style scoped>
 .data-page {
-    padding: 16px;
+    padding: 12px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .page-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    margin-bottom: 10px;
+    flex-shrink: 0;
 }
 
 .page-header h1 {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 600;
 }
 
@@ -215,8 +215,9 @@ onMounted(() => {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 16px;
-    padding: 12px;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+    padding: 8px 12px;
     background: var(--bg-primary);
     border: 1px solid var(--border-light);
 }
@@ -227,8 +228,15 @@ onMounted(() => {
 }
 
 .table-container {
-    background: var(--bg-primary);
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
     border: 1px solid var(--border-light);
-    overflow-x: auto;
+    background: var(--bg-primary);
+}
+
+.pagination {
+    flex-shrink: 0;
+    padding: 8px 0;
 }
 </style>

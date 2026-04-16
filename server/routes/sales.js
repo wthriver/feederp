@@ -4,13 +4,57 @@ const { v4: uuidv4 } = require('uuid');
 const { query, queryOne, run, logActivity, getNextSequence, formatSequence } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/permissions');
+const { validateQuantity, validateDate, validateUUID, validateRequired, validateArray, validateDecimal } = require('../middleware/requestValidator');
+const { triggerWorkflow, checkWorkflowRequired } = require('../utils/workflow');
 
 function getTaxRate(tenantId) {
     const setting = queryOne('SELECT value FROM settings WHERE tenant_id = ? AND key = ?', [tenantId, 'tax_rate']);
-    return setting ? parseFloat(setting.value) / 100 : 0.05; // Default 5%
+    return setting ? parseFloat(setting.value) / 100 : 0.05;
 }
 
-// Customers - Read-only reference (use /master/customers for full CRUD)
+function validateSalesOrderItems(items) {
+    const errors = [];
+    if (!items || items.length === 0) {
+        errors.push('At least one item is required');
+        return { valid: false, errors };
+    }
+    
+    items.forEach((item, index) => {
+        if (!item.product_id) {
+            errors.push(`Item ${index + 1}: Product is required`);
+        }
+        const qtyValidation = validateQuantity(item.quantity, 'Quantity');
+        if (!qtyValidation.valid) {
+            errors.push(`Item ${index + 1}: ${qtyValidation.error}`);
+        }
+        const rateValidation = validatePositiveNumber(item.rate, 'Rate');
+        if (!rateValidation.valid) {
+            errors.push(`Item ${index + 1}: ${rateValidation.error}`);
+        }
+    });
+    
+    return { valid: errors.length === 0, errors };
+}
+
+function validatePositiveNumber(value, fieldName = 'value') {
+    const num = parseFloat(value);
+    if (isNaN(num) || num < 0) {
+        return { valid: false, error: `${fieldName} must be a non-negative number` };
+    }
+    return { valid: true, value: num };
+}
+
+function checkStockAvailability(productId, godownId, requiredQty) {
+    const stock = queryOne(`
+        SELECT COALESCE(SUM(quantity), 0) as available_qty
+        FROM stock_ledger
+        WHERE item_type = 'product' AND item_id = ? AND godown_id = ? AND quantity > 0
+    `, [productId, godownId]);
+    
+    return stock && stock.available_qty >= requiredQty;
+}
+
+// Customers - Read-only reference endpoint (use /master/customers for full CRUD)
 router.get('/customers', authenticate, async (req, res) => {
     try {
         const { search, type, page = 1, limit = 100 } = req.query;
@@ -30,20 +74,6 @@ router.get('/customers', authenticate, async (req, res) => {
         const { total } = queryOne(countSql, params.slice(0, -2));
 
         res.json({ success: true, data: customers, meta: { page: parseInt(page), limit: parseInt(limit), total, totalPages: Math.ceil(total / limit) } });
-    } catch (error) {
-        res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
-    }
-});
-
-router.get('/customers/:id', authenticate, async (req, res) => {
-    try {
-        const customer = queryOne('SELECT * FROM customers WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
-        if (!customer) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Customer not found' } });
-
-        const orders = query('SELECT * FROM sales_orders WHERE customer_id = ? ORDER BY created_at DESC LIMIT 10', [req.params.id]);
-        const invoices = query('SELECT * FROM sales_invoices WHERE customer_id = ? ORDER BY created_at DESC LIMIT 10', [req.params.id]);
-
-        res.json({ success: true, data: { ...customer, orders, invoices } });
     } catch (error) {
         res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
     }
@@ -109,16 +139,33 @@ router.post('/orders', authenticate, requirePermission('sales', 'add'), async (r
     try {
         const { customer_id, factory_id, order_date, delivery_date, items, notes, discount_amount } = req.body;
 
-        if (!items || items.length === 0) {
-            return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'At least one item is required' } });
+        const validation = validateSalesOrderItems(items);
+        if (!validation.valid) {
+            return res.status(400).json({ 
+                success: false, 
+                error: { code: 'VALIDATION_ERROR', message: validation.errors.join('. ') } 
+            });
+        }
+
+        if (customer_id) {
+            const uuidValidation = validateUUID(customer_id, 'Customer ID');
+            if (!uuidValidation.valid) {
+                return res.status(400).json({ 
+                    success: false, 
+                    error: { code: 'VALIDATION_ERROR', message: uuidValidation.error } 
+                });
+            }
         }
 
         const orderNumber = formatSequence('SO', getNextSequence('SO', req.tenantId));
         const orderId = uuidv4();
 
         let subtotal = 0;
-        items.forEach(item => { subtotal += (item.quantity || 0) * (item.rate || 0); });
-        const discount = discount_amount || 0;
+        items.forEach(item => { 
+            subtotal += (item.quantity || 0) * (item.rate || 0); 
+        });
+        
+        const discount = Math.max(0, parseFloat(discount_amount) || 0);
         const taxRate = getTaxRate(req.tenantId);
         const tax = (subtotal - discount) * taxRate;
         const net = subtotal - discount + tax;
@@ -134,10 +181,25 @@ router.post('/orders', authenticate, requirePermission('sales', 'add'), async (r
                 [itemId, orderId, item.product_id, item.batch_number, item.quantity, item.unit_id, item.rate, amount]);
         });
 
-        logActivity(req.tenantId, req.user.id, 'sales', 'order_created', orderId, null, { order_number: orderNumber }, req);
+        const workflowResult = await triggerWorkflow(req.tenantId, req.user.id, 'sales_order', orderId, req);
+        if (workflowResult.triggered) {
+            run(`UPDATE sales_orders SET workflow_id = ? WHERE id = ?`, [workflowResult.workflowId, orderId]);
+        }
 
-        res.json({ success: true, data: { id: orderId, order_number: orderNumber }, message: 'Sales order created successfully' });
+        logActivity(req.tenantId, req.user.id, 'sales', 'order_created', orderId, null, { order_number: orderNumber, workflow: workflowResult.triggered }, req);
+
+        res.json({ 
+            success: true, 
+            data: { 
+                id: orderId, 
+                order_number: orderNumber,
+                workflow_triggered: workflowResult.triggered,
+                workflow_id: workflowResult.workflowId
+            }, 
+            message: workflowResult.triggered ? 'Sales order created and pending approval' : 'Sales order created successfully' 
+        });
     } catch (error) {
+        console.error('Sales order create error:', error);
         res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
     }
 });
@@ -252,9 +314,9 @@ router.post('/invoices', authenticate, requirePermission('sales', 'add'), async 
 
             const stockBalance = queryOne(`
                 SELECT balance_qty, balance_amount FROM stock_ledger
-                WHERE item_type = 'product' AND item_id = ? AND godown_id = ?
+                WHERE tenant_id = ? AND item_type = 'product' AND item_id = ? AND godown_id = ?
                 ORDER BY created_at DESC LIMIT 1
-            `, [item.product_id, item.godown_id]);
+            `, [req.tenantId, item.product_id, item.godown_id]);
 
             if (stockBalance && stockBalance.balance_qty > 0 && stockBalance.balance_qty >= item.quantity) {
                 const avgRate = stockBalance.balance_amount / stockBalance.balance_qty;
@@ -270,7 +332,7 @@ router.post('/invoices', authenticate, requirePermission('sales', 'add'), async 
         });
 
         if (so_id) {
-            run(`UPDATE sales_orders SET status = 'dispatched' WHERE id = ?`, [so_id]);
+            run(`UPDATE sales_orders SET status = 'dispatched' WHERE id = ? AND tenant_id = ?`, [so_id, req.tenantId]);
             items.forEach(item => {
                 run('UPDATE so_items SET delivered_qty = delivered_qty + ? WHERE so_id = ? AND product_id = ?',
                     [item.quantity, so_id, item.product_id]);
@@ -279,9 +341,23 @@ router.post('/invoices', authenticate, requirePermission('sales', 'add'), async 
 
         run('UPDATE customers SET outstanding = outstanding + ? WHERE id = ?', [net, customer_id]);
 
-        logActivity(req.tenantId, req.user.id, 'sales', 'invoice_created', invoiceId, null, { invoice_number: invoiceNumber }, req);
+        const workflowResult = await triggerWorkflow(req.tenantId, req.user.id, 'invoice', invoiceId, req);
+        if (workflowResult.triggered) {
+            run(`UPDATE sales_invoices SET workflow_id = ? WHERE id = ?`, [workflowResult.workflowId, invoiceId]);
+        }
 
-        res.json({ success: true, data: { id: invoiceId, invoice_number: invoiceNumber }, message: 'Invoice created successfully' });
+        logActivity(req.tenantId, req.user.id, 'sales', 'invoice_created', invoiceId, null, { invoice_number: invoiceNumber, workflow: workflowResult.triggered }, req);
+
+        res.json({ 
+            success: true, 
+            data: { 
+                id: invoiceId, 
+                invoice_number: invoiceNumber,
+                workflow_triggered: workflowResult.triggered,
+                workflow_id: workflowResult.workflowId
+            }, 
+            message: workflowResult.triggered ? 'Invoice created and pending approval' : 'Invoice created successfully' 
+        });
     } catch (error) {
         console.error('Invoice creation error:', error);
         res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
@@ -292,7 +368,7 @@ router.post('/invoices/:id/payment', authenticate, requirePermission('finance', 
     try {
         const { amount, payment_mode, reference_number, notes } = req.body;
 
-        const invoice = queryOne('SELECT * FROM sales_invoices WHERE id = ?', [req.params.id]);
+        const invoice = queryOne('SELECT * FROM sales_invoices WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
         if (!invoice) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Invoice not found' } });
 
         const paymentAmount = Math.min(amount, invoice.amount_due);
@@ -358,9 +434,23 @@ router.post('/returns', authenticate, requirePermission('sales', 'add'), async (
                 [uuidv4(), returnId, item.product_id, item.batch_number, item.quantity, item.rate, item.quantity * item.rate, item.condition]);
         });
 
-        logActivity(req.tenantId, req.user.id, 'sales', 'return_created', returnId, null, { return_number: returnNumber }, req);
+        const workflowResult = await triggerWorkflow(req.tenantId, req.user.id, 'sales_return', returnId, req);
+        if (workflowResult.triggered) {
+            run(`UPDATE sales_returns SET workflow_id = ? WHERE id = ?`, [workflowResult.workflowId, returnId]);
+        }
 
-        res.json({ success: true, data: { id: returnId, return_number: returnNumber }, message: 'Return created successfully' });
+        logActivity(req.tenantId, req.user.id, 'sales', 'return_created', returnId, null, { return_number: returnNumber, workflow: workflowResult.triggered }, req);
+
+        res.json({ 
+            success: true, 
+            data: { 
+                id: returnId, 
+                return_number: returnNumber,
+                workflow_triggered: workflowResult.triggered,
+                workflow_id: workflowResult.workflowId
+            }, 
+            message: workflowResult.triggered ? 'Return created and pending approval' : 'Return created successfully' 
+        });
     } catch (error) {
         res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
     }

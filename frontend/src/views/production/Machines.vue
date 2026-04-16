@@ -36,58 +36,50 @@
             </table>
         </div>
 
-        <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
-            <div class="modal" style="max-width: 500px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">{{ editing ? 'Edit' : 'Add' }} Machine</h3>
-                    <button class="modal-close" @click="showModal = false">&times;</button>
+        <AppModal v-model="showModal" :title="editing ? 'Edit Machine' : 'Add Machine'" size="sm" :loading="saving">
+            <div class="form-row-4">
+                <div class="form-group">
+                    <label class="form-label">{{ $t('common.code') }} *</label>
+                    <input v-model="form.code" class="input-field" required />
                 </div>
-                <div class="modal-body">
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">{{ $t('common.code') }} *</label>
-                            <input v-model="form.code" class="input-field" required />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">{{ $t('common.name') }} *</label>
-                            <input v-model="form.name" class="input-field" required />
-                        </div>
-                    </div>
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Type</label>
-                            <input v-model="form.type" class="input-field" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Brand</label>
-                            <input v-model="form.brand" class="input-field" />
-                        </div>
-                    </div>
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Capacity</label>
-                            <input v-model.number="form.capacity" type="number" class="input-field" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Unit</label>
-                            <input v-model="form.unit" class="input-field" placeholder="tons/hr" />
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="showModal = false">{{ $t('common.cancel') }}</button>
-                    <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+                <div class="form-group span-3">
+                    <label class="form-label">{{ $t('common.name') }} *</label>
+                    <input v-model="form.name" class="input-field" required />
                 </div>
             </div>
-        </div>
+            <div class="form-row-4" style="margin-top: 6px;">
+                <div class="form-group">
+                    <label class="form-label">Type</label>
+                    <input v-model="form.type" class="input-field" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Brand</label>
+                    <input v-model="form.brand" class="input-field" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Capacity</label>
+                    <input v-model.number="form.capacity" type="number" class="input-field" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Unit</label>
+                    <input v-model="form.unit" class="input-field" />
+                </div>
+            </div>
+            <template #footer>
+                <button class="btn" @click="showModal = false">{{ $t('common.cancel') }}</button>
+                <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+            </template>
+        </AppModal>
     </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import api from '@/api'
+import AppModal from '@/components/AppModal.vue'
 
 const loading = ref(false)
+const saving = ref(false)
 const data = ref([])
 const showModal = ref(false)
 const editing = ref(null)
@@ -116,12 +108,14 @@ function editItem(item) {
 }
 
 async function save() {
+    saving.value = true
     try {
         await api.post('/production/machines', form)
         window.showToast?.({ type: 'success', message: 'Saved successfully' })
         showModal.value = false
         loadData()
     } catch (error) { window.showToast?.({ type: 'error', message: 'Save failed' }) }
+    finally { saving.value = false }
 }
 
 onMounted(loadData)

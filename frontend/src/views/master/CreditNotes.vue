@@ -30,7 +30,7 @@
                         <td class="font-mono">{{ item.note_number }}</td>
                         <td>{{ item.note_type }}</td>
                         <td>{{ item.customer_name || '-' }}</td>
-                        <td class="font-mono">₹{{ item.total_amount }}</td>
+                        <td class="font-mono">৳{{ item.total_amount }}</td>
                         <td>{{ item.invoice_number || '-' }}</td>
                         <td>{{ item.note_date }}</td>
                         <td>
@@ -46,57 +46,50 @@
             </table>
         </div>
 
-        <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
-            <div class="modal" style="max-width: 600px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">Create Credit Note</h3>
-                    <button class="modal-close" @click="showModal = false">&times;</button>
+        <AppModal v-model="showModal" title="Create Credit Note" size="sm" :loading="saving">
+            <div class="form-row-4">
+                <div class="form-group span-2">
+                    <label class="form-label">Customer *</label>
+                    <select v-model="form.customer_id" class="select-field">
+                        <option value="">Select</option>
+                        <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }}</option>
+                    </select>
                 </div>
-                <div class="modal-body">
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Customer *</label>
-                            <select v-model="form.customer_id" class="select-field">
-                                <option value="">Select Customer</option>
-                                <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }}</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Type</label>
-                            <select v-model="form.note_type" class="select-field">
-                                <option value="sales_return">Sales Return</option>
-                                <option value="discount">Discount</option>
-                                <option value="adjustment">Adjustment</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Reason</label>
-                        <textarea v-model="form.reason" class="input-field" rows="2"></textarea>
-                    </div>
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Amount *</label>
-                            <input v-model="form.total_amount" type="number" class="input-field" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Invoice Number</label>
-                            <input v-model="form.invoice_number" class="input-field" />
-                        </div>
-                    </div>
+                <div class="form-group">
+                    <label class="form-label">Type</label>
+                    <select v-model="form.note_type" class="select-field">
+                        <option value="sales_return">Return</option>
+                        <option value="discount">Discount</option>
+                        <option value="adjustment">Adjustment</option>
+                    </select>
                 </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="showModal = false">Cancel</button>
-                    <button class="btn btn-primary" @click="save" :disabled="saving">{{ saving ? 'Creating...' : 'Create' }}</button>
+                <div class="form-group">
+                    <label class="form-label">Amount *</label>
+                    <input v-model="form.total_amount" type="number" class="input-field" />
                 </div>
             </div>
-        </div>
+            <div class="form-group" style="margin-top: 6px;">
+                <label class="form-label">Reason</label>
+                <textarea v-model="form.reason" class="input-field" rows="2"></textarea>
+            </div>
+            <div class="form-row-4" style="margin-top: 6px;">
+                <div class="form-group">
+                    <label class="form-label">Invoice #</label>
+                    <input v-model="form.invoice_number" class="input-field" />
+                </div>
+            </div>
+            <template #footer>
+                <button class="btn" @click="showModal = false">Cancel</button>
+                <button class="btn btn-primary" @click="save">Create</button>
+            </template>
+        </AppModal>
     </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import api from '@/api'
+import AppModal from '@/components/AppModal.vue'
 
 const loading = ref(false)
 const saving = ref(false)

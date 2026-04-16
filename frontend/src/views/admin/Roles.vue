@@ -19,37 +19,31 @@
             </div>
         </div>
 
-        <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
-            <div class="modal" style="max-width: 600px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">Edit Permissions - {{ editingRole?.name }}</h3>
-                    <button class="modal-close" @click="showModal = false">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div v-for="mod in modules" :key="mod.id" class="permission-module">
-                        <h4>{{ mod.name }}</h4>
-                        <div class="permission-checkboxes">
-                            <label v-for="perm in permissionTypes" :key="perm" class="checkbox-label">
-                                <input type="checkbox" :checked="hasPermission(mod.id, perm)" @change="togglePermission(mod.id, perm)" />
-                                {{ perm }}
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="showModal = false">{{ $t('common.cancel') }}</button>
-                    <button class="btn btn-primary" @click="savePermissions">Save</button>
+        <AppModal v-model="showModal" :title="`Edit Permissions - ${editingRole?.name}`" size="md" :loading="saving">
+            <div v-for="mod in modules" :key="mod.id" class="permission-module">
+                <h4>{{ mod.name }}</h4>
+                <div class="permission-checkboxes">
+                    <label v-for="perm in permissionTypes" :key="perm" class="checkbox-label">
+                        <input type="checkbox" :checked="hasPermission(mod.id, perm)" @change="togglePermission(mod.id, perm)" />
+                        {{ perm }}
+                    </label>
                 </div>
             </div>
-        </div>
+            <template #footer>
+                <button class="btn" @click="showModal = false">Cancel</button>
+                <button class="btn btn-primary" @click="savePermissions">Save</button>
+            </template>
+        </AppModal>
     </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import api from '@/api'
+import AppModal from '@/components/AppModal.vue'
 
 const loading = ref(false)
+const saving = ref(false)
 const data = ref([])
 const rolePermissions = ref({})
 const showModal = ref(false)
@@ -118,6 +112,7 @@ async function editPermissions(role) {
 }
 
 async function savePermissions() {
+    saving.value = true
     try {
         const perms = []
         for (const [module, permList] of Object.entries(selectedPermissions.value)) {
@@ -128,6 +123,7 @@ async function savePermissions() {
         showModal.value = false
         loadData()
     } catch (error) { window.showToast?.({ type: 'error', message: 'Save failed' }) }
+    finally { saving.value = false }
 }
 
 onMounted(loadData)

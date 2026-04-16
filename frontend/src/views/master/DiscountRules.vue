@@ -29,8 +29,8 @@
                     <tr v-for="item in data" :key="item.id">
                         <td>{{ item.name }}</td>
                         <td>{{ item.discount_type }}</td>
-                        <td>{{ item.discount_value }}{{ item.discount_type === 'percentage' ? '%' : '₹' }}</td>
-                        <td>₹{{ item.min_amount || 0 }}</td>
+                        <td>{{ item.discount_value }}{{ item.discount_type === 'percentage' ? '%' : '৳' }}</td>
+                        <td>৳{{ item.min_amount || 0 }}</td>
                         <td>{{ item.valid_from || '-' }}</td>
                         <td>{{ item.valid_to || '-' }}</td>
                         <td><span :class="['badge', item.is_active ? 'badge-success' : 'badge-secondary']">{{ item.is_active ? 'Active' : 'Inactive' }}</span></td>
@@ -42,63 +42,54 @@
             </table>
         </div>
 
-        <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
-            <div class="modal" style="max-width: 500px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">Add Discount Rule</h3>
-                    <button class="modal-close" @click="showModal = false">&times;</button>
+        <AppModal v-model="showModal" title="Add Discount Rule" size="md" :loading="saving">
+            <div class="form-row-4">
+                <div class="form-group span-2">
+                    <label class="form-label">Name *</label>
+                    <input v-model="form.name" class="input-field" />
                 </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label class="form-label">Name *</label>
-                        <input v-model="form.name" class="input-field" placeholder="Festival Discount" />
-                    </div>
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Type</label>
-                            <select v-model="form.discount_type" class="select-field">
-                                <option value="percentage">Percentage</option>
-                                <option value="fixed">Fixed Amount</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Value *</label>
-                            <input v-model="form.discount_value" type="number" class="input-field" placeholder="10" />
-                        </div>
-                    </div>
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Min Amount</label>
-                            <input v-model="form.min_amount" type="number" class="input-field" placeholder="0" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Priority</label>
-                            <input v-model="form.priority" type="number" class="input-field" placeholder="1" />
-                        </div>
-                    </div>
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Valid From</label>
-                            <input v-model="form.valid_from" type="date" class="input-field" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Valid To</label>
-                            <input v-model="form.valid_to" type="date" class="input-field" />
-                        </div>
-                    </div>
+                <div class="form-group">
+                    <label class="form-label">Type</label>
+                    <select v-model="form.discount_type" class="select-field">
+                        <option value="percentage">Percentage</option>
+                        <option value="fixed">Fixed</option>
+                    </select>
                 </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="showModal = false">Cancel</button>
-                    <button class="btn btn-primary" @click="save" :disabled="saving">{{ saving ? 'Saving...' : 'Save' }}</button>
+                <div class="form-group">
+                    <label class="form-label">Value *</label>
+                    <input v-model="form.discount_value" type="number" class="input-field" />
                 </div>
             </div>
-        </div>
+            <div class="form-row-4" style="margin-top: 6px;">
+                <div class="form-group">
+                    <label class="form-label">Min Amount</label>
+                    <input v-model="form.min_amount" type="number" class="input-field" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Priority</label>
+                    <input v-model="form.priority" type="number" class="input-field" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Valid From</label>
+                    <input v-model="form.valid_from" type="date" class="input-field" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Valid To</label>
+                    <input v-model="form.valid_to" type="date" class="input-field" />
+                </div>
+            </div>
+            <template #footer>
+                <button class="btn" @click="showModal = false">Cancel</button>
+                <button class="btn btn-primary" @click="save">Save</button>
+            </template>
+        </AppModal>
     </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import api from '@/api'
+import AppModal from '@/components/AppModal.vue'
 
 const loading = ref(false)
 const saving = ref(false)

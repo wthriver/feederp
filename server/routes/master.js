@@ -10,7 +10,8 @@ const { validate, schemas } = require('../middleware/validate');
 router.get('/units', authenticate, async (req, res) => {
     try {
         const units = query(
-            'SELECT * FROM units WHERE is_active = 1 ORDER BY name'
+            'SELECT * FROM units WHERE tenant_id = ? AND is_active = 1 ORDER BY name',
+            [req.tenantId]
         );
 
         res.json({ success: true, data: units });
@@ -24,8 +25,8 @@ router.post('/units', authenticate, requirePermission('master', 'add'), async (r
         const { code, name, type, decimal_places } = req.body;
         const id = uuidv4();
 
-        run(`INSERT INTO units (id, code, name, type, decimal_places) VALUES (?, ?, ?, ?, ?)`,
-            [id, code, name, type || 'general', decimal_places || 2]);
+        run(`INSERT INTO units (id, tenant_id, code, name, type, decimal_places, is_active) VALUES (?, ?, ?, ?, ?, ?, 1)`,
+            [id, req.tenantId, code, name, type || 'general', decimal_places || 2]);
 
         logActivity(req.tenantId, req.user.id, 'master', 'unit_created', id, null, { code, name }, req);
 
@@ -39,13 +40,13 @@ router.put('/units/:id', authenticate, requirePermission('master', 'edit'), asyn
     try {
         const { code, name, type, decimal_places, is_active } = req.body;
         
-        const existing = queryOne('SELECT id FROM units WHERE id = ?', [req.params.id]);
+        const existing = queryOne('SELECT id FROM units WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
         if (!existing) {
             return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Unit not found' } });
         }
 
-        run(`UPDATE units SET code = ?, name = ?, type = ?, decimal_places = ?, is_active = ? WHERE id = ?`,
-            [code, name, type, decimal_places, is_active ?? 1, req.params.id]);
+        run(`UPDATE units SET code = ?, name = ?, type = ?, decimal_places = ?, is_active = ? WHERE id = ? AND tenant_id = ?`,
+            [code, name, type, decimal_places, is_active ?? 1, req.params.id, req.tenantId]);
 
         res.json({ success: true, message: 'Unit updated successfully' });
     } catch (error) {
@@ -55,16 +56,21 @@ router.put('/units/:id', authenticate, requirePermission('master', 'edit'), asyn
 
 router.delete('/units/:id', authenticate, requirePermission('master', 'delete'), async (req, res) => {
     try {
+        const existing = queryOne('SELECT id FROM units WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
+        if (!existing) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Unit not found' } });
+        }
+
         const inUse = queryOne(`
-            SELECT id FROM raw_materials WHERE unit_id = ? 
-            UNION SELECT id FROM products WHERE unit_id = ?
-        `, [req.params.id, req.params.id]);
+            SELECT id FROM raw_materials WHERE unit_id = ? AND tenant_id = ? 
+            UNION SELECT id FROM products WHERE unit_id = ? AND tenant_id = ?
+        `, [req.params.id, req.tenantId, req.params.id, req.tenantId]);
         
         if (inUse) {
             return res.status(400).json({ success: false, error: { code: 'CANNOT_DELETE', message: 'Unit is in use by materials or products' } });
         }
 
-        run('UPDATE units SET is_active = 0 WHERE id = ?', [req.params.id]);
+        run('UPDATE units SET is_active = 0 WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
         res.json({ success: true, message: 'Unit deleted successfully' });
     } catch (error) {
         res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
@@ -121,10 +127,13 @@ router.post('/factories', authenticate, requirePermission('master', 'add'), vali
 router.put('/factories/:id', authenticate, requirePermission('master', 'edit'), validate(schemas.factory), async (req, res) => {
     try {
         const { name, code, address, phone, email, is_active } = req.body;
-        const old = queryOne('SELECT * FROM factories WHERE id = ?', [req.params.id]);
+        const old = queryOne('SELECT * FROM factories WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
+        if (!old) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Factory not found' } });
+        }
 
-        run(`UPDATE factories SET name = ?, code = ?, address = ?, phone = ?, email = ?, is_active = ? WHERE id = ?`,
-            [name, code, address, phone, email, is_active ?? 1, req.params.id]);
+        run(`UPDATE factories SET name = ?, code = ?, address = ?, phone = ?, email = ?, is_active = ? WHERE id = ? AND tenant_id = ?`,
+            [name, code, address, phone, email, is_active ?? 1, req.params.id, req.tenantId]);
 
         logActivity(req.tenantId, req.user.id, 'master', 'factory_updated', req.params.id, old, req.body, req);
 
@@ -136,7 +145,7 @@ router.put('/factories/:id', authenticate, requirePermission('master', 'edit'), 
 
 router.delete('/factories/:id', authenticate, requirePermission('master', 'delete'), async (req, res) => {
     try {
-        const old = queryOne('SELECT * FROM factories WHERE id = ?', [req.params.id]);
+        const old = queryOne('SELECT * FROM factories WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
         if (!old) {
             return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Factory not found' } });
         }
@@ -146,7 +155,7 @@ router.delete('/factories/:id', authenticate, requirePermission('master', 'delet
             return res.status(400).json({ success: false, error: { code: 'CANNOT_DELETE', message: 'Cannot delete factory with active godowns' } });
         }
 
-        run('UPDATE factories SET is_active = 0 WHERE id = ?', [req.params.id]);
+        run('UPDATE factories SET is_active = 0 WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
         logActivity(req.tenantId, req.user.id, 'master', 'factory_deleted', req.params.id, old, null, req);
         res.json({ success: true, message: 'Factory deleted successfully' });
     } catch (error) {
@@ -199,6 +208,11 @@ router.put('/godowns/:id', authenticate, requirePermission('master', 'edit'), as
     try {
         const { name, code, type, location, is_active } = req.body;
 
+        const existing = queryOne('SELECT id FROM godowns WHERE id = ? AND factory_id IN (SELECT id FROM factories WHERE tenant_id = ?)', [req.params.id, req.tenantId]);
+        if (!existing) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Godown not found' } });
+        }
+
         run(`UPDATE godowns SET name = ?, code = ?, type = ?, location = ?, is_active = ? WHERE id = ?`,
             [name, code, type, location, is_active ?? 1, req.params.id]);
 
@@ -212,6 +226,10 @@ router.put('/godowns/:id', authenticate, requirePermission('master', 'edit'), as
 
 router.delete('/godowns/:id', authenticate, requirePermission('master', 'delete'), async (req, res) => {
     try {
+        const existing = queryOne('SELECT id FROM godowns WHERE id = ? AND factory_id IN (SELECT id FROM factories WHERE tenant_id = ?)', [req.params.id, req.tenantId]);
+        if (!existing) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Godown not found' } });
+        }
         run('UPDATE godowns SET is_active = 0 WHERE id = ?', [req.params.id]);
         logActivity(req.tenantId, req.user.id, 'master', 'godown_deleted', req.params.id, null, null, req);
         res.json({ success: true, message: 'Godown deleted successfully' });
@@ -308,12 +326,15 @@ router.post('/raw-materials', authenticate, requirePermission('master', 'add'), 
 
 router.put('/raw-materials/:id', authenticate, requirePermission('master', 'edit'), async (req, res) => {
     try {
-        const old = queryOne('SELECT * FROM raw_materials WHERE id = ?', [req.params.id]);
+        const old = queryOne('SELECT * FROM raw_materials WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
+        if (!old) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Raw material not found' } });
+        }
         const { code, name, name_bn, category, unit_id, hsn_code, min_stock, max_stock, is_active } = req.body;
 
         run(`UPDATE raw_materials SET code = ?, name = ?, name_bn = ?, category = ?, unit_id = ?, hsn_code = ?, min_stock = ?, max_stock = ?, is_active = ?
-             WHERE id = ?`,
-            [code, name, name_bn, category, unit_id, hsn_code, min_stock, max_stock, is_active ?? 1, req.params.id]);
+             WHERE id = ? AND tenant_id = ?`,
+            [code, name, name_bn, category, unit_id, hsn_code, min_stock, max_stock, is_active ?? 1, req.params.id, req.tenantId]);
 
         logActivity(req.tenantId, req.user.id, 'master', 'raw_material_updated', req.params.id, old, req.body, req);
 
@@ -325,7 +346,11 @@ router.put('/raw-materials/:id', authenticate, requirePermission('master', 'edit
 
 router.delete('/raw-materials/:id', authenticate, requirePermission('master', 'delete'), async (req, res) => {
     try {
-        run('UPDATE raw_materials SET is_active = 0 WHERE id = ?', [req.params.id]);
+        const existing = queryOne('SELECT id FROM raw_materials WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
+        if (!existing) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Raw material not found' } });
+        }
+        run('UPDATE raw_materials SET is_active = 0 WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
         logActivity(req.tenantId, req.user.id, 'master', 'raw_material_deleted', req.params.id, null, null, req);
         res.json({ success: true, message: 'Raw material deleted successfully' });
     } catch (error) {
@@ -421,12 +446,15 @@ router.post('/products', authenticate, requirePermission('master', 'add'), async
 
 router.put('/products/:id', authenticate, requirePermission('master', 'edit'), async (req, res) => {
     try {
-        const old = queryOne('SELECT * FROM products WHERE id = ?', [req.params.id]);
+        const old = queryOne('SELECT * FROM products WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
+        if (!old) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Product not found' } });
+        }
         const { code, name, name_bn, type, category, pack_size, unit_id, mrp, min_stock, is_active } = req.body;
 
         run(`UPDATE products SET code = ?, name = ?, name_bn = ?, type = ?, category = ?, pack_size = ?, unit_id = ?, mrp = ?, min_stock = ?, is_active = ?
-             WHERE id = ?`,
-            [code, name, name_bn, type, category, pack_size, unit_id, mrp, min_stock, is_active ?? 1, req.params.id]);
+             WHERE id = ? AND tenant_id = ?`,
+            [code, name, name_bn, type, category, pack_size, unit_id, mrp, min_stock, is_active ?? 1, req.params.id, req.tenantId]);
 
         logActivity(req.tenantId, req.user.id, 'master', 'product_updated', req.params.id, old, req.body, req);
 
@@ -438,7 +466,11 @@ router.put('/products/:id', authenticate, requirePermission('master', 'edit'), a
 
 router.delete('/products/:id', authenticate, requirePermission('master', 'delete'), async (req, res) => {
     try {
-        run('UPDATE products SET is_active = 0 WHERE id = ?', [req.params.id]);
+        const existing = queryOne('SELECT id FROM products WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
+        if (!existing) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Product not found' } });
+        }
+        run('UPDATE products SET is_active = 0 WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
         logActivity(req.tenantId, req.user.id, 'master', 'product_deleted', req.params.id, null, null, req);
         res.json({ success: true, message: 'Product deleted successfully' });
     } catch (error) {
@@ -479,13 +511,13 @@ router.put('/routes/:id', authenticate, requirePermission('master', 'edit'), asy
     try {
         const { name, name_bn, description, factory_id, is_active } = req.body;
         
-        const existing = queryOne('SELECT id FROM routes WHERE id = ?', [req.params.id]);
+        const existing = queryOne('SELECT id FROM routes WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
         if (!existing) {
             return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Route not found' } });
         }
 
-        run(`UPDATE routes SET name = ?, name_bn = ?, description = ?, factory_id = ?, is_active = ? WHERE id = ?`,
-            [name, name_bn, description, factory_id, is_active ?? 1, req.params.id]);
+        run(`UPDATE routes SET name = ?, name_bn = ?, description = ?, factory_id = ?, is_active = ? WHERE id = ? AND tenant_id = ?`,
+            [name, name_bn, description, factory_id, is_active ?? 1, req.params.id, req.tenantId]);
 
         res.json({ success: true, message: 'Route updated successfully' });
     } catch (error) {
@@ -495,12 +527,17 @@ router.put('/routes/:id', authenticate, requirePermission('master', 'edit'), asy
 
 router.delete('/routes/:id', authenticate, requirePermission('master', 'delete'), async (req, res) => {
     try {
-        const inUse = queryOne('SELECT id FROM customers WHERE route_id = ? AND is_active = 1', [req.params.id]);
+        const existing = queryOne('SELECT id FROM routes WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
+        if (!existing) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Route not found' } });
+        }
+
+        const inUse = queryOne('SELECT id FROM customers WHERE route_id = ? AND tenant_id = ? AND is_active = 1', [req.params.id, req.tenantId]);
         if (inUse) {
             return res.status(400).json({ success: false, error: { code: 'CANNOT_DELETE', message: 'Route is assigned to customers' } });
         }
 
-        run('UPDATE routes SET is_active = 0 WHERE id = ?', [req.params.id]);
+        run('UPDATE routes SET is_active = 0 WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
         res.json({ success: true, message: 'Route deleted successfully' });
     } catch (error) {
         res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
@@ -531,7 +568,7 @@ router.get('/suppliers', authenticate, async (req, res) => {
         res.json({
             success: true,
             data: suppliers,
-            pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / limit) }
+            meta: { page: parseInt(page), limit: parseInt(limit), total, totalPages: Math.ceil(total / limit) }
         });
     } catch (error) {
         res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
@@ -638,7 +675,7 @@ router.get('/customers', authenticate, async (req, res) => {
         res.json({
             success: true,
             data: customers,
-            pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / limit) }
+            meta: { page: parseInt(page), limit: parseInt(limit), total, totalPages: Math.ceil(total / limit) }
         });
     } catch (error) {
         res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
@@ -722,8 +759,15 @@ router.get('/settings', authenticate, async (req, res) => {
         const settings = {};
         query('SELECT key, value FROM settings WHERE tenant_id = ?', [req.tenantId])
             .forEach(s => { settings[s.key] = s.value; });
+        
+        // Add defaults if not exist
+        if (!settings.currency) settings.currency = 'INR';
+        if (!settings.tax_rate) settings.tax_rate = '5';
+        if (!settings.date_format) settings.date_format = 'DD/MM/YYYY';
+        
         res.json({ success: true, data: settings });
     } catch (error) {
+        console.error('Settings error:', error);
         res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
     }
 });
@@ -732,9 +776,15 @@ router.put('/settings', authenticate, requirePermission('admin', 'edit'), async 
     try {
         const { key, value } = req.body;
 
-        run(`INSERT INTO settings (id, tenant_id, key, value, updated_at) VALUES (?, ?, ?, ?, ?)
-             ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = ?`,
-            [uuidv4(), req.tenantId, key, value, new Date().toISOString(), value, new Date().toISOString()]);
+        const existing = queryOne('SELECT id FROM settings WHERE tenant_id = ? AND key = ?', [req.tenantId, key]);
+        
+        if (existing) {
+            run('UPDATE settings SET value = ?, updated_at = ? WHERE tenant_id = ? AND key = ?',
+                [value, new Date().toISOString(), req.tenantId, key]);
+        } else {
+            run('INSERT INTO settings (id, tenant_id, key, value, updated_at) VALUES (?, ?, ?, ?, ?)',
+                [uuidv4(), req.tenantId, key, value, new Date().toISOString()]);
+        }
 
         res.json({ success: true, message: 'Setting updated successfully' });
     } catch (error) {
@@ -773,13 +823,19 @@ router.post('/price-lists', authenticate, requirePermission('master', 'add'), as
 
 router.get('/price-lists/:id/items', authenticate, async (req, res) => {
     try {
+        // Verify price list belongs to this tenant
+        const priceList = queryOne('SELECT id FROM price_lists WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
+        if (!priceList) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Price list not found' } });
+        }
+
         const items = query(`
             SELECT pli.*, rm.name as material_name, p.name as product_name
             FROM price_list_items pli
-            LEFT JOIN raw_materials rm ON pli.item_type = 'raw_material' AND pli.item_id = rm.id
-            LEFT JOIN products p ON pli.item_type = 'product' AND pli.item_id = p.id
+            LEFT JOIN raw_materials rm ON pli.item_type = 'raw_material' AND pli.item_id = rm.id AND rm.tenant_id = ?
+            LEFT JOIN products p ON pli.item_type = 'product' AND pli.item_id = p.id AND p.tenant_id = ?
             WHERE pli.price_list_id = ?
-        `, [req.params.id]);
+        `, [req.tenantId, req.tenantId, req.params.id]);
         res.json({ success: true, data: items });
     } catch (error) {
         res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
@@ -788,6 +844,12 @@ router.get('/price-lists/:id/items', authenticate, async (req, res) => {
 
 router.post('/price-lists/:id/items', authenticate, requirePermission('master', 'add'), async (req, res) => {
     try {
+        // Verify price list belongs to this tenant
+        const priceList = queryOne('SELECT id FROM price_lists WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
+        if (!priceList) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Price list not found' } });
+        }
+
         const { items } = req.body;
         if (!items || items.length === 0) {
             return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'No items' } });
@@ -828,10 +890,9 @@ router.post('/discount-rules', authenticate, requirePermission('master', 'add'),
     try {
         const { name, item_type, item_id, customer_type, min_qty, max_qty, discount_percent, discount_amount, priority, valid_from, valid_to } = req.body;
         const id = uuidv4();
-
-        run(`INSERT INTO discount_rules (id, tenant_id, name, item_type, item_id, customer_type, min_qty, max_qty, discount_percent, discount_amount, priority, valid_from, valid_to)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [id, req.tenantId, name, item_type, item_id, customer_type, min_qty, max_qty, discount_percent || 0, discount_amount || 0, priority || 0, valid_from, valid_to]);
+        const fields = 'id, tenant_id, name, item_type, item_id, customer_type, min_qty, max_qty, discount_percent, discount_amount, priority, valid_from, valid_to, is_active';
+        const values = [id, req.tenantId, name, item_type, item_id, customer_type, min_qty, max_qty, discount_percent || 0, discount_amount || 0, priority || 0, valid_from, valid_to, 1];
+        run(`INSERT INTO discount_rules (${fields}) VALUES (${fields.split(', ').map(() => '?').join(', ')})`, values);
 
         res.json({ success: true, data: { id }, message: 'Discount rule created' });
     } catch (error) {
@@ -876,7 +937,7 @@ router.get('/credit-notes', authenticate, async (req, res) => {
 
 router.post('/credit-notes', authenticate, requirePermission('finance', 'add'), async (req, res) => {
     try {
-        const { note_type, reference_id, customer_id, invoice_id, amount, reason } = req.body;
+        const { note_type, reference_id, customer_id, invoice_id, amount, reason, invoice_number, reference_type } = req.body;
         
         if (!customer_id || !amount) {
             return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Customer and amount required' } });
@@ -888,7 +949,7 @@ router.post('/credit-notes', authenticate, requirePermission('finance', 'add'), 
 
         run(`INSERT INTO credit_notes (id, tenant_id, note_number, note_type, reference_type, reference_id, customer_id, invoice_id, amount, reason, created_by)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [id, req.tenantId, noteNumber, note_type, reference_type, reference_id, customer_id, invoice_id, amount, reason, req.user.id]);
+            [id, req.tenantId, noteNumber, note_type || 'credit', reference_type || 'invoice', reference_id || invoice_number || null, customer_id, invoice_id || invoice_number, amount, reason || null, req.user.id]);
 
         res.json({ success: true, data: { id, note_number: noteNumber }, message: 'Note created' });
     } catch (error) {
@@ -898,17 +959,17 @@ router.post('/credit-notes', authenticate, requirePermission('finance', 'add'), 
 
 router.post('/credit-notes/:id/approve', authenticate, requirePermission('finance', 'approve'), async (req, res) => {
     try {
-        const note = queryOne('SELECT * FROM credit_notes WHERE id = ?', [req.params.id]);
+        const note = queryOne('SELECT * FROM credit_notes WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
         if (!note) {
             return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Note not found' } });
         }
 
-        run('UPDATE credit_notes SET status = ? WHERE id = ?', ['approved', req.params.id]);
+        run('UPDATE credit_notes SET status = ? WHERE id = ? AND tenant_id = ?', ['approved', req.params.id, req.tenantId]);
 
         if (note.note_type === 'credit') {
-            run('UPDATE customers SET outstanding = outstanding + ? WHERE id = ?', [note.amount, note.customer_id]);
+            run('UPDATE customers SET outstanding = outstanding + ? WHERE id = ? AND tenant_id = ?', [note.amount, note.customer_id, req.tenantId]);
         } else {
-            run('UPDATE customers SET outstanding = outstanding - ? WHERE id = ?', [note.amount, note.customer_id]);
+            run('UPDATE customers SET outstanding = outstanding - ? WHERE id = ? AND tenant_id = ?', [note.amount, note.customer_id, req.tenantId]);
         }
 
         res.json({ success: true, message: 'Note approved' });
@@ -956,7 +1017,11 @@ router.post('/recurring-orders', authenticate, requirePermission('sales', 'add')
 
 router.delete('/recurring-orders/:id', authenticate, requirePermission('sales', 'delete'), async (req, res) => {
     try {
-        run('UPDATE recurring_orders SET is_active = 0 WHERE id = ?', [req.params.id]);
+        const existing = queryOne('SELECT id FROM recurring_orders WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
+        if (!existing) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Recurring order not found' } });
+        }
+        run('UPDATE recurring_orders SET is_active = 0 WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
         res.json({ success: true, message: 'Recurring order deleted' });
     } catch (error) {
         res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
@@ -1029,7 +1094,7 @@ router.post('/job-cards/:id/complete', authenticate, async (req, res) => {
 // Quality Checklists
 router.get('/quality-checklists', authenticate, async (req, res) => {
     try {
-        const checklists = query('SELECT * FROM quality_checklists WHERE is_active = 1', []);
+        const checklists = query('SELECT * FROM quality_checklists WHERE tenant_id = ? AND is_active = 1', [req.tenantId]);
         checklists.forEach(c => c.items = c.items ? JSON.parse(c.items) : []);
         res.json({ success: true, data: checklists });
     } catch (error) {
@@ -1059,7 +1124,7 @@ router.post('/quality-checklists', authenticate, requirePermission('quality', 'a
 
 router.delete('/quality-checklists/:id', authenticate, requirePermission('quality', 'delete'), async (req, res) => {
     try {
-        run('UPDATE quality_checklists SET is_active = 0 WHERE id = ?', [req.params.id]);
+        run('UPDATE quality_checklists SET is_active = 0 WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
         res.json({ success: true, message: 'Checklist deleted' });
     } catch (error) {
         res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
@@ -1069,7 +1134,7 @@ router.delete('/quality-checklists/:id', authenticate, requirePermission('qualit
 // Currency Rates
 router.get('/currencies', authenticate, async (req, res) => {
     try {
-        const currencies = query('SELECT * FROM currency_rates WHERE is_active = 1', []);
+        const currencies = query('SELECT * FROM currency_rates WHERE tenant_id = ? AND is_active = 1', [req.tenantId]);
         res.json({ success: true, data: currencies });
     } catch (error) {
         res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });

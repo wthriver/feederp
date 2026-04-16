@@ -7,107 +7,123 @@
             </div>
         </div>
 
-        <div v-if="loading" class="loading">
-            <div class="spinner"></div>
-        </div>
-
-        <div v-else class="dashboard-grid">
-            <div class="stat-card" v-for="stat in stats" :key="stat.label">
-                <div class="stat-icon">{{ stat.icon }}</div>
-                <div class="stat-content">
-                    <div class="stat-value">{{ stat.value }}</div>
-                    <div class="stat-label">{{ $t(stat.label) }}</div>
-                </div>
-            </div>
-
-            <div class="dashboard-card">
-                <div class="card-header">
-                    <h3>Production Trend</h3>
-                </div>
-                <div class="card-body">
-                    <div class="chart-placeholder">
-                        <div v-for="(item, idx) in productionData" :key="idx" class="chart-bar-container">
-                            <div class="chart-bar" :style="{ height: (item.qty / maxProduction * 100) + '%' }"></div>
-                            <span class="chart-label">{{ item.month }}</span>
-                        </div>
+        <LoadingSpinner :loading="loading" :inline="false">
+            <div class="dashboard-grid">
+                <div class="stat-card" v-for="stat in stats" :key="stat.label">
+                    <div class="stat-icon">{{ stat.icon }}</div>
+                    <div class="stat-content">
+                        <div class="stat-value">{{ stat.value }}</div>
+                        <div class="stat-label">{{ $t(stat.label) }}</div>
                     </div>
                 </div>
-            </div>
 
-            <div class="dashboard-card">
-                <div class="card-header">
-                    <h3>Sales Trend</h3>
-                </div>
-                <div class="card-body">
-                    <div class="chart-placeholder">
-                        <div v-for="(item, idx) in salesData" :key="idx" class="chart-bar-container">
-                            <div class="chart-bar sales" :style="{ height: (item.amount / maxSales * 100) + '%' }"></div>
-                            <span class="chart-label">{{ item.month }}</span>
-                        </div>
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h3>Production Trend</h3>
                     </div>
-                </div>
-            </div>
-
-            <div class="dashboard-card alerts-card">
-                <div class="card-header">
-                    <h3>{{ $t('dashboard.lowStockAlerts') }}</h3>
-                    <span class="badge badge-danger">{{ alerts.low_stock }}</span>
-                </div>
-                <div class="card-body">
-                    <div v-if="alerts.low_stock > 0" class="alert-list">
-                        <div v-for="item in lowStockItems" :key="item.id" class="alert-item">
-                            <span class="alert-name">{{ item.name }}</span>
-                            <span class="alert-stock">
-                                {{ item.current_stock }} / {{ item.min_stock }}
-                            </span>
-                        </div>
-                    </div>
-                    <div v-else class="empty-state">
-                        <p>{{ $t('dashboard.noLowStock') }}</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="dashboard-card">
-                <div class="card-header">
-                    <h3>{{ $t('dashboard.pendingOrders') }}</h3>
-                </div>
-                <div class="card-body">
-                    <div class="pending-info">
-                        <div class="pending-count">{{ pendingData.count || 0 }}</div>
-                        <div class="pending-amount">₹{{ formatNumber(pendingData.amount || 0) }}</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="dashboard-card">
-                <div class="card-header">
-                    <h3>{{ $t('dashboard.recentActivity') }}</h3>
-                </div>
-                <div class="card-body">
-                    <div class="activity-list">
-                        <div v-for="activity in recentActivity" :key="activity.id" class="activity-item">
-                            <span class="activity-icon">{{ getActivityIcon(activity.action) }}</span>
-                            <div class="activity-content">
-                                <span class="activity-action">{{ activity.action }}</span>
-                                <span class="activity-module">{{ activity.module }}</span>
+                    <div class="card-body">
+                        <div class="chart-placeholder">
+                            <div v-for="(item, idx) in productionData" :key="idx" class="chart-bar-container">
+                                <div class="chart-bar" :style="{ height: (item.qty / maxProduction * 100) + '%' }"></div>
+                                <span class="chart-label">{{ item.month }}</span>
                             </div>
-                            <span class="activity-time">{{ formatTime(activity.created_at) }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h3>Sales Trend</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-placeholder">
+                            <div v-for="(item, idx) in salesData" :key="idx" class="chart-bar-container">
+                                <div class="chart-bar sales" :style="{ height: (item.amount / maxSales * 100) + '%' }"></div>
+                                <span class="chart-label">{{ item.month }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <EmptyState
+                    v-if="alerts.low_stock === 0"
+                    icon="✅"
+                    title="All Stock Levels OK"
+                    description="No low stock alerts at this time"
+                    size="small"
+                />
+
+                <div v-else class="dashboard-card alerts-card">
+                    <div class="card-header">
+                        <h3>{{ $t('dashboard.lowStockAlerts') }}</h3>
+                        <span class="badge badge-danger">{{ alerts.low_stock }}</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert-list">
+                            <div v-for="item in lowStockItems" :key="item.id" class="alert-item">
+                                <span class="alert-name">{{ item.name }}</span>
+                                <span class="alert-stock">
+                                    {{ formatNumber(item.current_stock) }} / {{ formatNumber(item.min_stock) }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h3>{{ $t('dashboard.pendingOrders') }}</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="pending-info">
+                            <div class="pending-count">{{ pendingData.count || 0 }}</div>
+                            <div class="pending-amount">{{ currencySymbol }}{{ formatNumber(pendingData.amount || 0) }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <EmptyState
+                    v-if="recentActivity.length === 0"
+                    icon="📝"
+                    title="No Recent Activity"
+                    description="Activity will appear here as you use the system"
+                    size="small"
+                />
+
+                <div v-else class="dashboard-card">
+                    <div class="card-header">
+                        <h3>{{ $t('dashboard.recentActivity') }}</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="activity-list">
+                            <div v-for="activity in recentActivity" :key="activity.id" class="activity-item">
+                                <span class="activity-icon">{{ getActivityIcon(activity.action) }}</span>
+                                <div class="activity-content">
+                                    <span class="activity-action">{{ formatAction(activity.action) }}</span>
+                                    <span class="activity-module">{{ activity.module }}</span>
+                                </div>
+                                <span class="activity-time">{{ formatTime(activity.created_at) }}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </LoadingSpinner>
     </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '@/api'
+import { useAuthStore } from '@/store/auth'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
+import EmptyState from '@/components/EmptyState.vue'
 
+const authStore = useAuthStore()
 const loading = ref(true)
 const filterDate = ref(new Date().toISOString().slice(0, 10))
 const dashboardData = ref(null)
+const currencySymbol = ref('₹')
 
 const stats = computed(() => {
     if (!dashboardData.value) return []
@@ -117,12 +133,12 @@ const stats = computed(() => {
         {
             icon: '🏭',
             label: 'dashboard.todayProduction',
-            value: `${d.today?.production?.batches || 0} batches, ${d.today?.production?.qty || 0} kg`
+            value: `${d.today?.production?.batches || 0} batches, ${formatNumber(d.today?.production?.qty || 0)} kg`
         },
         {
             icon: '💰',
             label: 'dashboard.todaySales',
-            value: `₹${formatNumber(d.today?.sales?.amount || 0)}`
+            value: `${currencySymbol.value}${formatNumber(d.today?.sales?.amount || 0)}`
         },
         {
             icon: '📥',
@@ -167,6 +183,7 @@ const maxSales = computed(() => {
 })
 
 function formatNumber(num) {
+    if (!num) return '0'
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
     if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
     return num.toFixed(0)
@@ -182,6 +199,11 @@ function formatTime(dateStr) {
     if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago'
     if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago'
     return date.toLocaleDateString()
+}
+
+function formatAction(action) {
+    if (!action) return ''
+    return action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
 }
 
 function getActivityIcon(action) {
@@ -200,8 +222,9 @@ function getActivityIcon(action) {
 async function loadDashboard() {
     loading.value = true
     try {
+        const factory = authStore.currentFactory
         const response = await api.get('/dashboard/summary', {
-            params: { factory_id: localStorage.getItem('factoryId') }
+            params: { factory_id: factory?.id }
         })
         if (response.data.success) {
             dashboardData.value = response.data.data

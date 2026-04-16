@@ -58,70 +58,66 @@
             </div>
         </div>
 
-        <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
-            <div class="modal" style="max-width: 600px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">{{ editing ? 'Edit' : 'Add' }} Raw Material</h3>
-                    <button class="modal-close" @click="showModal = false">&times;</button>
+        <AppModal v-model="showModal" :title="editing ? 'Edit Raw Material' : 'Add Raw Material'" size="lg" :loading="saving">
+            <div class="form-row-4">
+                <div class="form-group">
+                    <label class="form-label">{{ $t('common.code') }} *</label>
+                    <input v-model="form.code" class="input-field" required />
                 </div>
-                <div class="modal-body">
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">{{ $t('common.code') }} *</label>
-                            <input v-model="form.code" class="input-field" required />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">{{ $t('common.name') }} *</label>
-                            <input v-model="form.name" class="input-field" required />
-                        </div>
-                    </div>
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Category</label>
-                            <select v-model="form.category" class="select-field">
-                                <option value="grain">Grain</option>
-                                <option value="protein">Protein</option>
-                                <option value="mineral">Mineral</option>
-                                <option value="vitamin">Vitamin</option>
-                                <option value="additive">Additive</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Unit</label>
-                            <select v-model="form.unit_id" class="select-field">
-                                <option v-for="u in units" :key="u.id" :value="u.id">{{ u.name }}</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-row form-row-3">
-                        <div class="form-group">
-                            <label class="form-label">Min Stock</label>
-                            <input v-model.number="form.min_stock" type="number" class="input-field" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Max Stock</label>
-                            <input v-model.number="form.max_stock" type="number" class="input-field" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Opening Stock</label>
-                            <input v-model.number="form.opening_stock" type="number" class="input-field" />
-                        </div>
-                    </div>
+                <div class="form-group span-2">
+                    <label class="form-label">{{ $t('common.name') }} *</label>
+                    <input v-model="form.name" class="input-field" required />
                 </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="showModal = false">{{ $t('common.cancel') }}</button>
-                    <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <select v-model="form.category" class="select-field">
+                        <option value="grain">Grain</option>
+                        <option value="protein">Protein</option>
+                        <option value="mineral">Mineral</option>
+                        <option value="vitamin">Vitamin</option>
+                        <option value="additive">Additive</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Unit</label>
+                    <select v-model="form.unit_id" class="select-field">
+                        <option v-for="u in units" :key="u.id" :value="u.id">{{ u.name }}</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Opening Stock</label>
+                    <input v-model.number="form.opening_stock" type="number" class="input-field" />
                 </div>
             </div>
-        </div>
+            <div class="form-row-4" style="margin-top: 6px;">
+                <div class="form-group">
+                    <label class="form-label">Opening Rate</label>
+                    <input v-model.number="form.opening_rate" type="number" class="input-field" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Min Stock</label>
+                    <input v-model.number="form.min_stock" type="number" class="input-field" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Max Stock</label>
+                    <input v-model.number="form.max_stock" type="number" class="input-field" />
+                </div>
+            </div>
+            <template #footer>
+                <button class="btn" @click="showModal = false">{{ $t('common.cancel') }}</button>
+                <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+            </template>
+        </AppModal>
     </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import api from '@/api'
+import AppModal from '@/components/AppModal.vue'
 
 const loading = ref(false)
+const saving = ref(false)
 const data = ref([])
 const units = ref([])
 const showModal = ref(false)
@@ -174,6 +170,7 @@ function edit(item) {
 }
 
 async function save() {
+    saving.value = true
     try {
         if (editing.value) {
             await api.put(`/master/raw-materials/${editing.value.id}`, form)
@@ -186,6 +183,8 @@ async function save() {
         loadData()
     } catch (error) {
         window.showToast?.({ type: 'error', message: 'Operation failed' })
+    } finally {
+        saving.value = false
     }
 }
 

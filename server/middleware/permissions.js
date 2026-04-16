@@ -1,7 +1,11 @@
 const { query, queryOne } = require('../config/database');
 
 function loadUserPermissions(tenantId, roleId) {
-    if (roleId) {
+    try {
+        if (!roleId) {
+            return {};
+        }
+        
         const perms = query(
             `SELECT module, permission FROM role_permissions WHERE role_id = ? AND granted = 1`,
             [roleId]
@@ -16,8 +20,10 @@ function loadUserPermissions(tenantId, roleId) {
         });
 
         return permissions;
+    } catch (error) {
+        console.error('loadUserPermissions error:', error);
+        return {};
     }
-    return {};
 }
 
 function checkModuleAccess(module, permission) {

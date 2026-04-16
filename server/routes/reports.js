@@ -847,27 +847,23 @@ router.get('/cash-flow', authenticate, requirePermission('reports', 'view'), asy
     }
 });
 
-// Customer Self-Service Portal
-router.get('/portal/customers/:customerId/orders', async (req, res) => {
+// Customer Self-Service Portal - Now requires authentication
+
+router.get('/portal/customers/:customerId/orders', authenticate, async (req, res) => {
     try {
         const { customerId } = req.params;
-        const { api_key } = req.query;
 
-        // Validate API key for customer portal
-        if (!api_key) {
-            return res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'API key required' } });
-        }
-
-        const customer = queryOne('SELECT * FROM customers WHERE id = ?', [customerId]);
+        // Validate customer belongs to this tenant
+        const customer = queryOne('SELECT * FROM customers WHERE id = ? AND tenant_id = ?', [customerId, req.tenantId]);
         if (!customer) {
             return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Customer not found' } });
         }
 
         const orders = query(`
             SELECT order_number, order_date, net_amount, status
-            FROM sales_orders WHERE customer_id = ?
+            FROM sales_orders WHERE customer_id = ? AND tenant_id = ?
             ORDER BY created_at DESC LIMIT 20
-        `, [customerId]);
+        `, [customerId, req.tenantId]);
 
         res.json({ success: true, data: { customer: { name: customer.name, code: customer.code }, orders } });
     } catch (error) {
@@ -875,20 +871,21 @@ router.get('/portal/customers/:customerId/orders', async (req, res) => {
     }
 });
 
-router.get('/portal/customers/:customerId/invoices', async (req, res) => {
+router.get('/portal/customers/:customerId/invoices', authenticate, async (req, res) => {
     try {
         const { customerId } = req.params;
-        const { api_key } = req.query;
 
-        if (!api_key) {
-            return res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'API key required' } });
+        // Validate customer belongs to this tenant
+        const customer = queryOne('SELECT * FROM customers WHERE id = ? AND tenant_id = ?', [customerId, req.tenantId]);
+        if (!customer) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Customer not found' } });
         }
 
         const invoices = query(`
             SELECT invoice_number, invoice_date, net_amount, amount_due, payment_status
-            FROM sales_invoices WHERE customer_id = ?
+            FROM sales_invoices WHERE customer_id = ? AND tenant_id = ?
             ORDER BY created_at DESC LIMIT 20
-        `, [customerId]);
+        `, [customerId, req.tenantId]);
 
         res.json({ success: true, data: invoices });
     } catch (error) {
@@ -896,16 +893,12 @@ router.get('/portal/customers/:customerId/invoices', async (req, res) => {
     }
 });
 
-router.get('/portal/customers/:customerId/orders/:orderId/confirm', async (req, res) => {
+router.post('/portal/customers/:customerId/orders/:orderId/confirm', authenticate, async (req, res) => {
     try {
         const { customerId, orderId } = req.params;
-        const { api_key } = req.query;
 
-        if (!api_key) {
-            return res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'API key required' } });
-        }
-
-        const order = queryOne('SELECT * FROM sales_orders WHERE id = ? AND customer_id = ?', [orderId, customerId]);
+        // Validate order belongs to this tenant's customer
+        const order = queryOne('SELECT * FROM sales_orders WHERE id = ? AND customer_id = ? AND tenant_id = ?', [orderId, customerId, req.tenantId]);
         if (!order) {
             return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Order not found' } });
         }
@@ -914,7 +907,7 @@ router.get('/portal/customers/:customerId/orders/:orderId/confirm', async (req, 
             return res.status(400).json({ success: false, error: { code: 'INVALID_STATUS', message: 'Order already processed' } });
         }
 
-        run('UPDATE sales_orders SET status = ? WHERE id = ?', ['confirmed', orderId]);
+        run('UPDATE sales_orders SET status = ? WHERE id = ? AND tenant_id = ?', ['confirmed', orderId, req.tenantId]);
 
         res.json({ success: true, message: 'Order confirmed', data: { order_number: order.order_number } });
     } catch (error) {

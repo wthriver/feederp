@@ -38,50 +38,46 @@
             </table>
         </div>
 
-        <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
-            <div class="modal" style="max-width: 500px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">{{ editing ? 'Edit' : 'Add' }} Factory</h3>
-                    <button class="modal-close" @click="showModal = false">&times;</button>
+        <AppModal v-model="showModal" :title="editing ? 'Edit Factory' : 'Add Factory'" size="md" :loading="saving">
+            <div class="form-row-4">
+                <div class="form-group">
+                    <label class="form-label">{{ $t('common.code') }} *</label>
+                    <input v-model="form.code" class="input-field" required />
                 </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label class="form-label">{{ $t('common.code') }} *</label>
-                        <input v-model="form.code" class="input-field" required />
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">{{ $t('common.name') }} *</label>
-                        <input v-model="form.name" class="input-field" required />
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Address</label>
-                        <textarea v-model="form.address" class="input-field" rows="2"></textarea>
-                    </div>
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Phone</label>
-                            <input v-model="form.phone" class="input-field" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Email</label>
-                            <input v-model="form.email" type="email" class="input-field" />
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="showModal = false">{{ $t('common.cancel') }}</button>
-                    <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+                <div class="form-group span-3">
+                    <label class="form-label">{{ $t('common.name') }} *</label>
+                    <input v-model="form.name" class="input-field" required />
                 </div>
             </div>
-        </div>
+            <div class="form-group" style="margin-top: 6px;">
+                <label class="form-label">Address</label>
+                <textarea v-model="form.address" class="input-field" rows="2"></textarea>
+            </div>
+            <div class="form-row-4" style="margin-top: 6px;">
+                <div class="form-group">
+                    <label class="form-label">Phone</label>
+                    <input v-model="form.phone" class="input-field" />
+                </div>
+                <div class="form-group span-3">
+                    <label class="form-label">Email</label>
+                    <input v-model="form.email" type="email" class="input-field" />
+                </div>
+            </div>
+            <template #footer>
+                <button class="btn" @click="showModal = false">{{ $t('common.cancel') }}</button>
+                <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+            </template>
+        </AppModal>
     </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import api from '@/api'
+import AppModal from '@/components/AppModal.vue'
 
 const loading = ref(false)
+const saving = ref(false)
 const data = ref([])
 const showModal = ref(false)
 const editing = ref(null)

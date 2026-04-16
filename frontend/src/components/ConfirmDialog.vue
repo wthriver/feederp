@@ -99,10 +99,12 @@ defineExpose({ open, show })
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 10000;
+    z-index: 1500;
+    pointer-events: auto;
 }
 
 .confirm-dialog {
+    pointer-events: auto;
     background: var(--bg-primary);
     border-radius: 8px;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);

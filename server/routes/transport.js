@@ -26,6 +26,47 @@ router.post('/vehicles', authenticate, requirePermission('transport', 'add'), as
     }
 });
 
+router.put('/vehicles/:id', authenticate, requirePermission('transport', 'edit'), async (req, res) => {
+    try {
+        const { vehicle_number, type, capacity, owner_name, driver_id, status, is_active } = req.body;
+
+        const existing = queryOne('SELECT * FROM vehicles WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
+        if (!existing) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Vehicle not found' } });
+        }
+
+        run(`UPDATE vehicles SET vehicle_number = ?, type = ?, capacity = ?, owner_name = ?, driver_id = ?, status = ?, is_active = ?
+             WHERE id = ?`,
+            [vehicle_number, type, capacity, owner_name, driver_id, status || existing.status, is_active ?? 1, req.params.id]);
+
+        res.json({ success: true, message: 'Vehicle updated successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+    }
+});
+
+router.delete('/vehicles/:id', authenticate, requirePermission('transport', 'delete'), async (req, res) => {
+    try {
+        const vehicle = queryOne('SELECT * FROM vehicles WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
+        if (!vehicle) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Vehicle not found' } });
+        }
+
+        const activeDeliveries = queryOne('SELECT id FROM delivery_orders WHERE vehicle_id = ? AND status IN (?, ?, ?)', 
+            [req.params.id, 'pending', 'assigned', 'in_transit']);
+        if (activeDeliveries) {
+            return res.status(400).json({ success: false, error: { code: 'CANNOT_DELETE', message: 'Vehicle has active deliveries' } });
+        }
+
+        run('UPDATE vehicles SET is_active = 0 WHERE id = ?', [req.params.id]);
+        logActivity(req.tenantId, req.user.id, 'transport', 'vehicle_deleted', req.params.id, null, { vehicle_number: vehicle.vehicle_number }, req);
+
+        res.json({ success: true, message: 'Vehicle deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+    }
+});
+
 router.get('/drivers', authenticate, async (req, res) => {
     try {
         const drivers = query('SELECT * FROM drivers WHERE tenant_id = ? AND is_active = 1 ORDER BY name', [req.tenantId]);
@@ -42,6 +83,47 @@ router.post('/drivers', authenticate, requirePermission('transport', 'add'), asy
         run(`INSERT INTO drivers (id, tenant_id, name, phone, license_number, address) VALUES (?, ?, ?, ?, ?, ?)`,
             [id, req.tenantId, name, phone, license_number, address]);
         res.json({ success: true, data: { id }, message: 'Driver created successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+    }
+});
+
+router.put('/drivers/:id', authenticate, requirePermission('transport', 'edit'), async (req, res) => {
+    try {
+        const { name, phone, license_number, address, is_active } = req.body;
+
+        const existing = queryOne('SELECT * FROM drivers WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
+        if (!existing) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Driver not found' } });
+        }
+
+        run(`UPDATE drivers SET name = ?, phone = ?, license_number = ?, address = ?, is_active = ?
+             WHERE id = ?`,
+            [name, phone, license_number, address, is_active ?? 1, req.params.id]);
+
+        res.json({ success: true, message: 'Driver updated successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+    }
+});
+
+router.delete('/drivers/:id', authenticate, requirePermission('transport', 'delete'), async (req, res) => {
+    try {
+        const driver = queryOne('SELECT * FROM drivers WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
+        if (!driver) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Driver not found' } });
+        }
+
+        const activeDeliveries = queryOne('SELECT id FROM delivery_orders WHERE driver_id = ? AND status IN (?, ?, ?)', 
+            [req.params.id, 'pending', 'assigned', 'in_transit']);
+        if (activeDeliveries) {
+            return res.status(400).json({ success: false, error: { code: 'CANNOT_DELETE', message: 'Driver has active deliveries' } });
+        }
+
+        run('UPDATE drivers SET is_active = 0 WHERE id = ?', [req.params.id]);
+        logActivity(req.tenantId, req.user.id, 'transport', 'driver_deleted', req.params.id, null, { name: driver.name }, req);
+
+        res.json({ success: true, message: 'Driver deleted successfully' });
     } catch (error) {
         res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
     }

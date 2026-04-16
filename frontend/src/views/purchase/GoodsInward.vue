@@ -65,212 +65,195 @@
             </div>
         </div>
 
-        <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
-                <div class="modal" style="max-width: 1000px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">{{ editing ? 'Edit' : 'New' }} Goods Inward Entry</h3>
-                    <button class="modal-close" @click="closeModal">&times;</button>
+        <AppModal v-model="showModal" :title="editing ? 'Edit Goods Inward' : 'New Goods Inward'" size="lg" :loading="saving">
+            <div class="form-row-4">
+                <div class="form-group">
+                    <label class="form-label">PO Reference</label>
+                    <select v-model="form.po_id" class="select-field" @change="onPoChange">
+                        <option value="">Select (Optional)</option>
+                        <option v-for="po in pendingPOs" :key="po.id" :value="po.id">{{ po.po_number }}</option>
+                    </select>
                 </div>
-                <div class="modal-body">
-                    <div class="form-row form-row-3">
-                        <div class="form-group">
-                            <label class="form-label">PO Reference</label>
-                            <select v-model="form.po_id" class="select-field" @change="onPoChange">
-                                <option value="">Select PO (Optional)</option>
-                                <option v-for="po in pendingPOs" :key="po.id" :value="po.id">{{ po.po_number }} - {{ po.supplier_name }}</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Inward Date *</label>
-                            <input v-model="form.inward_date" type="date" class="input-field" required />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Challan No</label>
-                            <input v-model="form.challan_number" type="text" class="input-field" placeholder="Supplier challan number" />
-                        </div>
-                    </div>
-                    <div class="form-row form-row-3">
-                        <div class="form-group">
-                            <label class="form-label">Supplier *</label>
-                            <select v-model="form.supplier_id" class="select-field" required @change="loadPoItems">
-                                <option value="">Select Supplier</option>
-                                <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.name }}</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Godown *</label>
-                            <select v-model="form.godown_id" class="select-field" required>
-                                <option value="">Select Godown</option>
-                                <option v-for="g in godowns" :key="g.id" :value="g.id">{{ g.name }}</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Vehicle No</label>
-                            <input v-model="form.vehicle_number" type="text" class="input-field" placeholder="Vehicle number" />
-                        </div>
-                    </div>
-
-                    <div class="items-section">
-                        <div class="section-header">
-                            <h4>Items</h4>
-                            <button type="button" class="btn btn-sm" @click="addItem">+ Add Item</button>
-                        </div>
-                        <table class="sheet-grid">
-                            <thead>
-                                <tr>
-                                    <th>Material</th>
-                                    <th>PO Qty</th>
-                                    <th>Received Qty</th>
-                                    <th>Unit</th>
-                                    <th>Rate</th>
-                                    <th>Amount</th>
-                                    <th>Batch</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="(item, idx) in form.items" :key="idx">
-                                    <td>
-                                        <select v-model="item.raw_material_id" class="select-field" @change="selectMaterial(item)">
-                                            <option value="">Select</option>
-                                            <option v-for="m in materials" :key="m.id" :value="m.id">{{ m.name }}</option>
-                                        </select>
-                                    </td>
-                                    <td class="font-mono text-right">{{ item.po_quantity || '-' }}</td>
-                                    <td>
-                                        <input v-model.number="item.quantity" type="number" class="input-field" min="0" @input="calcAmount(item)" />
-                                    </td>
-                                    <td>{{ item.unit_name }}</td>
-                                    <td>
-                                        <input v-model.number="item.rate" type="number" class="input-field" step="0.01" @input="calcAmount(item)" />
-                                    </td>
-                                    <td class="font-mono">₹{{ ((item.quantity || 0) * (item.rate || 0)).toLocaleString() }}</td>
-                                    <td>
-                                        <input v-model="item.batch_number" type="text" class="input-field" placeholder="Batch" />
-                                    </td>
-                                    <td><button type="button" class="btn btn-sm btn-icon" @click="removeItem(idx)">🗑️</button></td>
-                                </tr>
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <td colspan="5" class="text-right"><strong>Total:</strong></td>
-                                    <td class="font-mono"><strong>₹{{ totalAmount.toLocaleString() }}</strong></td>
-                                    <td colspan="2"></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-
-                    <div class="form-row form-row-2">
-                        <div class="form-group">
-                            <label class="form-label">Notes</label>
-                            <textarea v-model="form.notes" class="input-field" rows="3" placeholder="Any notes"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Quality Check</label>
-                            <select v-model="form.qc_required" class="select-field">
-                                <option :value="true">Required</option>
-                                <option :value="false">Not Required</option>
-                            </select>
-                        </div>
-                    </div>
+                <div class="form-group">
+                    <label class="form-label">Supplier *</label>
+                    <select v-model="form.supplier_id" class="select-field" required @change="loadPoItems">
+                        <option value="">Select</option>
+                        <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.name }}</option>
+                    </select>
                 </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="closeModal">{{ $t('common.cancel') }}</button>
-                    <button class="btn btn-primary" @click="save">{{ $t('common.save') }}</button>
+                <div class="form-group">
+                    <label class="form-label">Inward Date *</label>
+                    <input v-model="form.inward_date" type="date" class="input-field" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Challan No</label>
+                    <input v-model="form.challan_number" type="text" class="input-field" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Godown *</label>
+                    <select v-model="form.godown_id" class="select-field" required>
+                        <option value="">Select</option>
+                        <option v-for="g in godowns" :key="g.id" :value="g.id">{{ g.name }}</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Vehicle No</label>
+                    <input v-model="form.vehicle_number" type="text" class="input-field" />
                 </div>
             </div>
-        </div>
-
-        <div v-if="viewModal" class="modal-overlay" @click.self="viewModal = false">
-            <div class="modal" style="max-width: 900px;">
-                <div class="modal-header">
-                    <h3 class="modal-title">GRN Details - {{ selectedItem?.grn_number }}</h3>
-                    <button class="modal-close" @click="viewModal = false">&times;</button>
+            <div class="form-row-4" style="margin-top: 6px;">
+                <div class="form-group">
+                    <label class="form-label">Quality Check</label>
+                    <select v-model="form.qc_required" class="select-field">
+                        <option :value="true">Required</option>
+                        <option :value="false">Not Required</option>
+                    </select>
                 </div>
-                <div class="modal-body">
-                    <div class="detail-grid">
-                        <div class="detail-item">
-                            <label>GRN Number</label>
-                            <span class="font-mono">{{ selectedItem?.grn_number }}</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>Date</label>
-                            <span>{{ selectedItem?.grn_date }}</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>PO Reference</label>
-                            <span class="font-mono">{{ selectedItem?.po_number || 'N/A' }}</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>Supplier</label>
-                            <span>{{ selectedItem?.supplier_name }}</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>Challan No</label>
-                            <span>{{ selectedItem?.challan_no || 'N/A' }}</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>Godown</label>
-                            <span>{{ selectedItem?.godown_name }}</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>Vehicle No</label>
-                            <span>{{ selectedItem?.vehicle_no || 'N/A' }}</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>Status</label>
-                            <span :class="['badge', statusClass(selectedItem?.status)]">{{ selectedItem?.status }}</span>
-                        </div>
-                    </div>
-
-                    <h4 style="margin-top: 20px;">Items</h4>
-                    <table class="sheet-grid">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Material</th>
-                                <th>Received Qty</th>
-                                <th>Unit</th>
-                                <th>Rate</th>
-                                <th>Amount</th>
-                                <th>Batch No</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="(item, idx) in selectedItem?.items" :key="idx">
-                                <td>{{ idx + 1 }}</td>
-                                <td>{{ item.material_name }}</td>
-                                <td class="font-mono text-right">{{ item.quantity }}</td>
-                                <td>{{ item.unit_name }}</td>
-                                <td class="font-mono text-right">₹{{ item.rate }}</td>
-                                <td class="font-mono text-right">₹{{ (item.quantity * item.rate).toLocaleString() }}</td>
-                                <td>{{ item.batch_number || '-' }}</td>
-                            </tr>
-                        </tbody>
-                        <tfoot>
-                            <tr>
-                                <td colspan="5" class="text-right"><strong>Total:</strong></td>
-                                <td class="font-mono"><strong>₹{{ selectedItem?.total_amount?.toLocaleString() }}</strong></td>
-                                <td></td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn" @click="viewModal = false">Close</button>
-                    <button class="btn btn-primary" @click="print(selectedItem)">🖨️ Print</button>
+                <div class="form-group span-4">
+                    <label class="form-label">Notes</label>
+                    <input v-model="form.notes" type="text" class="input-field" />
                 </div>
             </div>
-        </div>
+
+            <div class="items-section">
+                <div class="section-header">
+                    <h4>Items</h4>
+                    <button type="button" class="btn btn-sm" @click="addItem">+ Add</button>
+                </div>
+                <table class="sheet-grid">
+                    <thead>
+                        <tr>
+                            <th>Material</th>
+                            <th style="width: 80px;">PO Qty</th>
+                            <th style="width: 100px;">Received</th>
+                            <th style="width: 60px;">Unit</th>
+                            <th style="width: 100px;">Rate</th>
+                            <th style="width: 120px;">Amount</th>
+                            <th style="width: 100px;">Batch</th>
+                            <th style="width: 40px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item, idx) in form.items" :key="idx">
+                            <td>
+                                <select v-model="item.raw_material_id" class="table-select" @change="selectMaterial(item)">
+                                    <option value="">Select</option>
+                                    <option v-for="m in materials" :key="m.id" :value="m.id">{{ m.name }}</option>
+                                </select>
+                            </td>
+                            <td class="font-mono text-right">{{ item.po_quantity || '-' }}</td>
+                            <td>
+                                <input v-model.number="item.quantity" type="number" class="table-input text-right" min="0" @input="calcAmount(item)" />
+                            </td>
+                            <td class="text-center">{{ item.unit_name || '-' }}</td>
+                            <td>
+                                <input v-model.number="item.rate" type="number" class="table-input text-right" step="0.01" @input="calcAmount(item)" />
+                            </td>
+                            <td class="font-mono text-right">৳{{ ((item.quantity || 0) * (item.rate || 0)).toLocaleString() }}</td>
+                            <td>
+                                <input v-model="item.batch_number" type="text" class="table-input" placeholder="Batch" />
+                            </td>
+                            <td><button type="button" class="btn btn-sm btn-icon" @click="removeItem(idx)">🗑️</button></td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="5" class="text-right"><strong>Total:</strong></td>
+                            <td class="font-mono text-right"><strong>৳{{ totalAmount.toLocaleString() }}</strong></td>
+                            <td colspan="2"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <template #footer>
+                <button class="btn" @click="closeModal">Cancel</button>
+                <button class="btn btn-primary" @click="save">Save</button>
+            </template>
+        </AppModal>
+
+        <AppModal v-model="viewModal" :title="'GRN Details - ' + selectedItem?.grn_number" size="lg" :loading="false">
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <label>GRN Number</label>
+                    <span class="font-mono">{{ selectedItem?.grn_number }}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Date</label>
+                    <span>{{ selectedItem?.grn_date }}</span>
+                </div>
+                <div class="detail-item">
+                    <label>PO Reference</label>
+                    <span class="font-mono">{{ selectedItem?.po_number || 'N/A' }}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Supplier</label>
+                    <span>{{ selectedItem?.supplier_name }}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Challan No</label>
+                    <span>{{ selectedItem?.challan_no || 'N/A' }}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Godown</label>
+                    <span>{{ selectedItem?.godown_name }}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Vehicle No</label>
+                    <span>{{ selectedItem?.vehicle_no || 'N/A' }}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Status</label>
+                    <span :class="['badge', statusClass(selectedItem?.status)]">{{ selectedItem?.status }}</span>
+                </div>
+            </div>
+
+            <h4 style="margin-top: 12px;">Items</h4>
+            <table class="sheet-grid">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Material</th>
+                        <th>Received Qty</th>
+                        <th>Unit</th>
+                        <th>Rate</th>
+                        <th>Amount</th>
+                        <th>Batch No</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(item, idx) in selectedItem?.items" :key="idx">
+                        <td>{{ idx + 1 }}</td>
+                        <td>{{ item.material_name }}</td>
+                        <td class="font-mono text-right">{{ item.quantity }}</td>
+                        <td>{{ item.unit_name }}</td>
+                        <td class="font-mono text-right">৳{{ item.rate }}</td>
+                        <td class="font-mono text-right">৳{{ (item.quantity * item.rate).toLocaleString() }}</td>
+                        <td>{{ item.batch_number || '-' }}</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="5" class="text-right"><strong>Total:</strong></td>
+                        <td class="font-mono"><strong>৳{{ selectedItem?.total_amount?.toLocaleString() }}</strong></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+            <template #footer>
+                <button class="btn" @click="viewModal = false">Close</button>
+                <button class="btn btn-primary" @click="print(selectedItem)">Print</button>
+            </template>
+        </AppModal>
     </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import api from '@/api'
+import AppModal from '@/components/AppModal.vue'
 
 const loading = ref(false)
+const saving = ref(false)
 const data = ref([])
 const suppliers = ref([])
 const materials = ref([])
@@ -417,6 +400,7 @@ function print(grn) {
 }
 
 async function save() {
+    saving.value = true
     try {
         if (!form.supplier_id || !form.godown_id || !form.inward_date) {
             window.showToast?.({ type: 'error', message: 'Please fill required fields' })
@@ -437,6 +421,8 @@ async function save() {
         loadData()
     } catch (error) {
         window.showToast?.({ type: 'error', message: error.response?.data?.message || 'Save failed' })
+    } finally {
+        saving.value = false
     }
 }
 
@@ -460,58 +446,13 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.items-section {
-    margin-top: 16px;
-}
-
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-}
-
-.section-header h4 {
-    font-size: var(--font-size-base);
-    font-weight: 600;
-}
-
-.items-section table {
-    margin-top: 8px;
-}
-
-.items-section table th,
-.items-section table td {
-    padding: 6px;
-}
-
-.items-section table .input-field,
-.items-section table .select-field {
-    width: 100%;
-    padding: 4px 8px;
-    font-size: var(--font-size-sm);
-}
-
-.detail-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-}
-
-.detail-item {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.detail-item label {
-    font-size: var(--font-size-xs);
-    color: var(--text-muted);
-    text-transform: uppercase;
-}
-
-.detail-item span {
-    font-size: var(--font-size-sm);
-    font-weight: 500;
-}
+.items-section { margin-top: 12px; }
+.section-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+.section-header h4 { font-size: var(--font-size-base); font-weight: 600; margin: 0; }
+.detail-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.detail-item { display: flex; flex-direction: column; gap: 4px; }
+.detail-item label { font-size: var(--font-size-xs); color: var(--text-muted); text-transform: uppercase; }
+.detail-item span { font-size: var(--font-size-sm); font-weight: 500; }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
 </style>

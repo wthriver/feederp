@@ -3,13 +3,48 @@ import { useAuthStore } from '@/store/auth'
 
 const routes = [
     {
-        path: '/login',
-        name: 'Login',
-        component: () => import('@/views/Login.vue'),
-        meta: { guest: true }
+        path: '/',
+        component: () => import('@/views/Landing.vue'),
+        children: [
+            {
+                path: '',
+                name: 'Landing',
+                component: () => import('@/views/public/Home.vue')
+            },
+            {
+                path: 'features',
+                name: 'Features',
+                component: () => import('@/views/public/Features.vue')
+            },
+            {
+                path: 'pricing',
+                name: 'Pricing',
+                component: () => import('@/views/public/Pricing.vue')
+            },
+            {
+                path: 'about',
+                name: 'About',
+                component: () => import('@/views/public/About.vue')
+            },
+            {
+                path: 'contact',
+                name: 'Contact',
+                component: () => import('@/views/public/Contact.vue')
+            }
+        ]
     },
     {
-        path: '/',
+        path: '/login',
+        name: 'Login',
+        component: () => import('@/views/Login.vue')
+    },
+    {
+        path: '/signup',
+        name: 'Signup',
+        component: () => import('@/views/Signup.vue')
+    },
+    {
+        path: '/dashboard',
         component: () => import('@/views/Layout.vue'),
         meta: { requiresAuth: true },
         children: [
@@ -222,6 +257,21 @@ const routes = [
                 path: 'settings',
                 name: 'Settings',
                 component: () => import('@/views/Settings.vue')
+            },
+            {
+                path: 'approvals',
+                name: 'Approvals',
+                component: () => import('@/views/Approvals.vue')
+            },
+            {
+                path: 'notifications',
+                name: 'Notifications',
+                component: () => import('@/views/Notifications.vue')
+            },
+            {
+                path: 'documents',
+                name: 'Documents',
+                component: () => import('@/views/Documents.vue')
             }
         ]
     }
@@ -232,16 +282,23 @@ const router = createRouter({
     routes
 })
 
-router.beforeEach((to, from, next) => {
-    const authStore = useAuthStore()
+router.beforeEach((to, from) => {
+    const token = localStorage.getItem('token')
+    const isAuthenticated = !!token
 
-    if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-        next('/login')
-    } else if (to.meta.guest && authStore.isAuthenticated) {
-        next('/')
-    } else {
-        next()
+    if (to.meta.requiresAuth && !isAuthenticated) {
+        return '/login'
     }
+    
+    if ((to.path === '/login' || to.path === '/signup') && isAuthenticated) {
+        return '/dashboard'
+    }
+    
+    if (to.path === '/' && isAuthenticated) {
+        return '/dashboard'
+    }
+    
+    return true
 })
 
 export default router

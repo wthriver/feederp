@@ -1,0 +1,271 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "FeedMill ERP API",
+    "version": "2.0.0",
+    "description": "Cattle Feed Manufacturing ERP System - REST API Documentation"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3006/api",
+      "description": "Development server"
+    }
+  ],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "summary": "User login",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": { "type": "string" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Login successful" },
+          "401": { "description": "Invalid credentials" }
+        }
+      }
+    },
+    "/me": {
+      "get": {
+        "summary": "Get current user profile",
+        "tags": ["Authentication"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "User profile" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/master/customers": {
+      "get": {
+        "summary": "List customers",
+        "tags": ["Master Data"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "type", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Customer list" }
+        }
+      },
+      "post": {
+        "summary": "Create customer",
+        "tags": ["Master Data"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["code", "name"],
+                "properties": {
+                  "code": { "type": "string" },
+                  "name": { "type": "string" },
+                  "name_bn": { "type": "string" },
+                  "type": { "type": "string", "enum": ["dealer", "retailer", "direct"] },
+                  "phone": { "type": "string" },
+                  "email": { "type": "string" },
+                  "address": { "type": "string" },
+                  "city": { "type": "string" },
+                  "state": { "type": "string" },
+                  "gstin": { "type": "string" },
+                  "credit_limit": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Customer created" },
+          "400": { "description": "Validation error" }
+        }
+      }
+    },
+    "/sales/orders": {
+      "get": {
+        "summary": "List sales orders",
+        "tags": ["Sales"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          { "name": "customer_id", "in": "query", "schema": { "type": "string" } },
+          { "name": "from_date", "in": "query", "schema": { "type": "string" } },
+          { "name": "to_date", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Order list" }
+        }
+      },
+      "post": {
+        "summary": "Create sales order",
+        "tags": ["Sales"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["customer_id", "order_date", "items"],
+                "properties": {
+                  "customer_id": { "type": "string", "format": "uuid" },
+                  "order_date": { "type": "string", "format": "date" },
+                  "delivery_date": { "type": "string", "format": "date" },
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "product_id": { "type": "string" },
+                        "quantity": { "type": "number" },
+                        "rate": { "type": "number" }
+                      }
+                    }
+                  },
+                  "notes": { "type": "string" },
+                  "discount_amount": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Order created" }
+        }
+      }
+    },
+    "/inventory/stock": {
+      "get": {
+        "summary": "Get stock summary",
+        "tags": ["Inventory"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "type", "in": "query", "schema": { "type": "string" } },
+          { "name": "godown_id", "in": "query", "schema": { "type": "string" } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Stock list" }
+        }
+      }
+    },
+    "/production/batches": {
+      "get": {
+        "summary": "List production batches",
+        "tags": ["Production"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Batch list" }
+        }
+      },
+      "post": {
+        "summary": "Create production batch",
+        "tags": ["Production"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["formula_id", "product_id", "batch_date", "planned_qty"],
+                "properties": {
+                  "formula_id": { "type": "string" },
+                  "product_id": { "type": "string" },
+                  "batch_date": { "type": "string" },
+                  "planned_qty": { "type": "number" },
+                  "machine_id": { "type": "string" },
+                  "godown_id": { "type": "string" },
+                  "shift": { "type": "string" },
+                  "notes": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Batch created" }
+        }
+      }
+    },
+    "/dashboard/summary": {
+      "get": {
+        "summary": "Get dashboard summary",
+        "tags": ["Dashboard"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Dashboard data" }
+        }
+      }
+    },
+    "/approval/pending": {
+      "get": {
+        "summary": "Get pending approvals",
+        "tags": ["Approvals"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Pending approvals" }
+        }
+      }
+    },
+    "/documents/upload": {
+      "post": {
+        "summary": "Upload document",
+        "tags": ["Documents"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file", "entity_type", "entity_id"],
+                "properties": {
+                  "file": { "type": "string", "format": "binary" },
+                  "entity_type": { "type": "string" },
+                  "entity_id": { "type": "string" },
+                  "description": { "type": "string" },
+                  "category": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "File uploaded" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "tags": [
+    { "name": "Authentication", "description": "User authentication endpoints" },
+    { "name": "Master Data", "description": "Customers, suppliers, products" },
+    { "name": "Sales", "description": "Sales orders and invoices" },
+    { "name": "Purchase", "description": "Purchase orders and GRN" },
+    { "name": "Inventory", "description": "Stock management" },
+    { "name": "Production", "description": "Production batches" },
+    { "name": "Finance", "description": "Accounts and payments" },
+    { "name": "Dashboard", "description": "Dashboard data" },
+    { "name": "Approvals", "description": "Approval workflows" },
+    { "name": "Documents", "description": "Document management" }
+  ]
+}

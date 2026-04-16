@@ -35,15 +35,16 @@ const { toasts, remove } = useToast()
     position: fixed;
     top: 80px;
     right: 16px;
-    z-index: 9999;
+    z-index: 2000;
     display: flex;
     flex-direction: column;
     gap: 8px;
     max-width: 360px;
-    width: 100%;
+    pointer-events: none;
 }
 
 .toast {
+    pointer-events: auto;
     display: flex;
     align-items: flex-start;
     gap: 12px;

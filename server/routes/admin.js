@@ -253,6 +253,32 @@ router.put('/roles/:id/permissions', authenticate, requirePermission('admin', 'e
     }
 });
 
+router.delete('/roles/:id', authenticate, requirePermission('admin', 'delete'), async (req, res) => {
+    try {
+        const role = queryOne('SELECT * FROM roles WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
+        if (!role) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Role not found' } });
+        }
+
+        if (role.is_system) {
+            return res.status(400).json({ success: false, error: { code: 'CANNOT_DELETE', message: 'Cannot delete system role' } });
+        }
+
+        const usersWithRole = queryOne('SELECT id FROM users WHERE role_id = ? AND is_active = 1', [req.params.id]);
+        if (usersWithRole) {
+            return res.status(400).json({ success: false, error: { code: 'CANNOT_DELETE', message: 'Cannot delete role assigned to users' } });
+        }
+
+        run('UPDATE roles SET is_active = 0 WHERE id = ?', [req.params.id]);
+        run('UPDATE role_permissions SET granted = 0 WHERE role_id = ?', [req.params.id]);
+        logActivity(req.tenantId, req.user.id, 'admin', 'role_deleted', req.params.id, null, { name: role.name }, req);
+
+        res.json({ success: true, message: 'Role deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+    }
+});
+
 // Activity Log
 router.get('/activity-log', authenticate, requirePermission('admin', 'view'), async (req, res) => {
     try {
