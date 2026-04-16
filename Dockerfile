@@ -9,7 +9,9 @@ RUN npm ci --only=production
 COPY server ./server
 COPY frontend/dist ./frontend/dist
 COPY openapi.json ./
-COPY uploads ./uploads
+
+# Create uploads directory if it doesn't exist (needed for file uploads)
+RUN mkdir -p uploads
 
 FROM node:20-alpine AS production
 
